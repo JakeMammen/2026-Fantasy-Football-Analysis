@@ -1,0 +1,18 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Data (keep large or sensitive files out of Git)
+data/*
+!data/.gitkeep
+
+# Output
+output/*
+!output/.gitkeep
+
+# macOS
+.DS_Store
+
+# RStudio
+.Rproj.user
