@@ -32,7 +32,7 @@ skill_stats <- stats %>%
     team,
     completions, attempts, passing_yards, passing_tds, passing_interceptions,
     carries, rushing_yards, rushing_tds,
-    receptions, targets, receiving_yards, receiving_tds,
+    receptions, targets, receiving_yards, receiving_tds, fumbles_total,
     fantasy_points_ppr
   ) %>%
   group_by(player_id) %>%
@@ -48,7 +48,7 @@ skill_stats <- stats %>%
     across(
       c(completions, attempts, passing_yards, passing_tds, passing_interceptions,
         carries, rushing_yards, rushing_tds,
-        receptions, targets, receiving_yards, receiving_tds,
+        receptions, targets, receiving_yards, receiving_tds, fumbles_total,
         fantasy_points_ppr),
       \(x) sum(x, na.rm = TRUE)
     ),
