@@ -7,7 +7,16 @@ library(tidyr)
 # --- 1. PRE-LOAD AND PRE-PROCESS GLOBAL DATA ---
 
 raw_stats <- load_player_stats(seasons = 2025) |> 
-  filter(position %in% c("QB", "RB", "WR", "TE"), season_type == "REG")
+  filter(position %in% c("QB", "RB", "WR", "TE"), season_type == "REG") 
+
+raw_stats <- raw_stats |>
+  group_by(player_id, player_display_name, team) |>
+  mutate(
+    active_games = n()) |>
+  ungroup()
+
+raw_stats <- raw_stats |>
+  filter(active_games >= 7)
 
 # Load total team games to calculate inactive metrics (ATL/others played 17 games in 2024)
 raw_schedules <- load_schedules(seasons = 2025) |> 
@@ -26,7 +35,7 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      p("Select or type any offensive player name below to analyze their PPR performance thresholds against their specific position group."),
+      p("Select a player name below to analyze their PPR performance thresholds against their specific position group."),
       hr(),
       
       # Selectize input allows typing and auto-completing search on thousands of players efficiently
@@ -34,7 +43,7 @@ ui <- fluidPage(
         inputId = "player_name",
         label = "Search Player Name:",
         choices = player_choices,
-        selected = "Drake London",
+        selected = "",
         options = list(placeholder = 'Type to search a player...', maxOptions = 500)
       ),
       
@@ -164,6 +173,7 @@ server <- function(input, output, session) {
         y = "PPR Fantasy Points",
         x = "Opponent / Game Week",
         caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+        tag = paste0(input$player_id)
       ) + 
       theme_minimal() + 
       theme(
@@ -174,7 +184,9 @@ server <- function(input, output, session) {
         plot.title = element_text(size = 14, face = "bold"),
         plot.subtitle = element_text(size = 12),
         plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-        plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
+        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
+        plot.tag = nflplotR::element_nfl_headshot(size = 5, hjust = 1, vjust = 1),
+        plot.tag.position = c(1, 1),
       )
     
     return(p)
