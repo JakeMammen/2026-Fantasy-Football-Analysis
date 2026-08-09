@@ -3,8 +3,6 @@ library(dplyr)
 library(ggimage)
 library(nflfastR)
 
-logo_path <- "/Users/jakemammen/Library/CloudStorage/OneDrive-Personal/Desktop/Masters Program/Fantasy_Football/IMG_4101.jpg"
-
 pbp <- load_pbp(2025) |>
   filter(week >= 1 & week <= 18)
 
@@ -93,19 +91,23 @@ ggplot() +
   ) +
   labs(
     x = "Percent of plays",
-    fill = "Dist from end zone",
-    title = "RB touch % based on how far away from the goal line the touch was (min. 100 touches):\nDavid Montgomery & Joe Mixon lead the league in % of touches in the red zone in 2024",
-    caption = "Figure: @FantasySPack | Data: @nflfastR"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+    title = "RB touch % based on how far away from the goal line the touch was (min. 100 touches):\nChris Rodriguez & Zach Charbonnet lead the league in % of touches in the red zone in 2025",
+    subtitle = "Regular Season | Data: @nflfastR"
   ) +
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1),
     expand = c(0, 0.01)
   ) +
   theme(
+    plot.title = ggplot2::element_text(face = "bold"),
+    plot.title.position = "plot",
+    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
+    plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
     axis.title.y = element_blank(),
     axis.ticks.y = element_blank(),
-    axis.title.x = element_blank(),
-    legend.position = "bottom"
+    legend.position = "bottom",
+    legend.title = element_blank()
   )
 
 rb_hvt <- pbp %>%
@@ -154,26 +156,24 @@ ggplot() +
   ) +
   geom_text() +
   labs(
-    x = "Percent of plays",
-    fill = "Distance from goal line",
+    x = "Percent of Total Touches",
+    fill = "Distance from Goal Line",
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
     title = "Visualization of TRAP backs, displaying RB high value touches (carries inside the 10\nand catches) as a % of total touches (min 100 touches)",
-    caption = "Figure: @FantasySPack | Data: @nflfastR"
+    subtitle = "Regular Season | Data: @nflfastR"
   ) +
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1),
-    limits = c(0, 0.18),
+    limits = c(0, 0.22),
     expand = c(0, 0)
   ) +
   theme(
+    plot.title = ggplot2::element_text(face = "bold"),
+    plot.title.position = "plot",
+    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
+    plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
     axis.title.y = element_blank(),
     axis.ticks.y = element_blank(),
-    axis.title.x = element_blank(),
-    plot.caption = element_text(color = "black", face = "bold", size = 10),
-    plot.background = element_rect(fill = "white")
-  ) #+
-# Add logo using ggimage
-#geom_image(
-#  aes(x = 0.16, y = 8),  # Adjust x and y to position the logo (top-right corner here)
-#  image = logo_path,
-#  size = 0.2  # Adjust size as needed
-# )
+    legend.position = "bottom",
+    legend.title = element_blank()
+  )
