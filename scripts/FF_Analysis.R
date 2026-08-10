@@ -142,8 +142,8 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(id, -qb_epa), y = qb_epa)) +
   nflplotR::scale_color_nfl(type = "secondary") +
   nflplotR::scale_fill_nfl(alpha = 0.4) +
   ggplot2::labs(
-    title = "2025 NFL Quarterback EPA per Play",
-    subtitle = "Data: @nflfastR",
+    title = "2025 NFL Quarterback EPA per Play Leaders",
+    subtitle = "Regular Season | Data: @nflfastR",
     y = "EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +

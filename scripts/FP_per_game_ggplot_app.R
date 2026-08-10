@@ -150,44 +150,46 @@ server <- function(input, output, session) {
     t12_name <- paste0("Weekly ", current_position, "12")
     t24_name <- paste0("Weekly ", current_position, "24")
     
-    # Generate the ggplot object
-    p <- ggplot(player_stats, aes(x = factor(week), y = ppr)) +
-      geom_col(aes(fill = category), width = 0.7) +
+    # Generate the ggplot object 
+    p <- ggplot(player_stats, aes(x = factor(week), y = ppr)) + 
+      geom_col(aes(fill = category), width = 0.7) + 
       geom_text(aes(label = sprintf("%.1f", ppr)), vjust = -0.5, size = 3) + 
       geom_line(aes(y = PosRank12, group = 1, linetype = t12_name), color = "gray50", linewidth = 0.8) + 
       geom_line(aes(y = PosRank24, group = 1, linetype = t24_name), color = "red", linewidth = 0.8) + 
-      scale_fill_manual(
+      scale_fill_manual( 
         values = c("#31a354", "#636363", "#e41a1c"), 
         labels = labs_fill, 
-        name = paste0("Performance\nInactive: ", pct_inactive, "%")
+        name = paste0("Performance\nInactive: ", pct_inactive, "%") 
       ) + 
-      scale_linetype_manual(
-        values = c("solid", "dashed"),
-        name = NULL
+      scale_linetype_manual( 
+        values = c("solid", "dashed"), 
+        name = NULL 
       ) + 
       scale_x_discrete(labels = x_labels) + 
       scale_y_continuous(limits = c(0, max(c(player_stats$ppr, player_stats$PosRank12), na.rm = TRUE) * 1.2), breaks = seq(0, 60, 5)) + 
-      labs(
-        title = paste0(input$player_name, ": Week 1 Through Week 18, 2024"),
-        subtitle = paste(n_active, "Active Games:", avg_ppr, "PPR/Game | Position Group:", current_position),
-        y = "PPR Fantasy Points",
-        x = "Opponent / Game Week",
-        caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-        tag = paste0(input$player_id)
+      labs( 
+        title = paste0(input$player_name, ": Week 1 Through Week 18, 2024"), 
+        subtitle = paste(n_active, "Active Games:", avg_ppr, "PPR/Game | Position Group:", current_position), 
+        y = "PPR Fantasy Points", 
+        x = "Opponent / Game Week", 
+        caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png", 
+        # MODIFICATION MADE HERE: Pulls the ID value from the row data object
+        tag = player_info$player_id 
       ) + 
       theme_minimal() + 
-      theme(
-        axis.text.x = element_text(angle = 0, vjust = 0.5, size = 9),
-        legend.position = "bottom",
-        legend.title = element_text(size = 10),
-        legend.text = element_text(size = 9),
-        plot.title = element_text(size = 14, face = "bold"),
-        plot.subtitle = element_text(size = 12),
-        plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
-        plot.tag = nflplotR::element_nfl_headshot(size = 5, hjust = 1, vjust = 1),
-        plot.tag.position = c(1, 1),
-      )
+      theme( 
+        axis.text.x = element_text(angle = 0, vjust = 0.5, size = 9), 
+        legend.position = "bottom", 
+        legend.title = element_text(size = 10), 
+        legend.text = element_text(size = 9), 
+        plot.title = element_text(size = 14, face = "bold"), 
+        plot.subtitle = element_text(size = 12), 
+        plot.background = ggplot2::element_rect(fill = "#F0F0F0"), 
+        plot.caption = ggpath::element_path(hjust = 1, size = 1.0), 
+        # MODIFICATION CONFIRMED HERE: Uses nflplotR to paint the headshot over the tag location
+        plot.tag = nflplotR::element_nfl_headshot(size = 5, hjust = 1, vjust = 1), 
+        plot.tag.position = c(1, 1) 
+      ) 
     
     return(p)
   })
@@ -205,7 +207,7 @@ server <- function(input, output, session) {
   # Download handler script for exporting plots cleanly
   output$download_plot <- downloadHandler(
     filename = function() {
-      paste0(gsub(" ", "_", tolower(input$player_name)), "_fantasy_performance_2024.png")
+      paste0(gsub(" ", "_", tolower(input$player_name)), "_fantasy_performance_2025.png")
     },
     content = function(file) {
       ggsave(file, plot = plot_generator(), device = "png", width = 11, height = 7, dpi = 300)
