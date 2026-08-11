@@ -25,6 +25,10 @@ raw_stats <- raw_stats |>
 raw_schedules <- load_schedules(seasons = 2025) |> 
   filter(game_type == "REG")
 
+# Load team details for copyright-safe color scheme mapping
+team_colors_db <- nflreadr::load_teams() |> 
+  dplyr::select(team_abbr, team_color, team_color2)
+
 # Unique player list for reactive searching/sorting alphabetized
 player_choices <- raw_stats |> 
   distinct(player_display_name) |> 
@@ -34,11 +38,54 @@ player_choices <- raw_stats |>
 
 # --- 2. USER INTERFACE (UI) ---
 ui <- fluidPage(
-  # Establish a modern Bootstrap 5 foundational theme baseline
-  theme = bs_theme(version = 5),
-  titlePanel("Fantasy Sports Pack Player Performance Tool (2025 Regular Season)"),
+  # Establish a modern Bootstrap 5 foundational theme baseline with professional sports typography
+  theme = bs_theme(
+    version = 5,
+    base_font = font_google("Oswald"),
+    heading_font = font_google("Silkscreen")
+  ),
+  
+  # Injecting premium custom sports styling parameters to build out web application containers
+  tags$head(
+    tags$style(HTML("
+      .title-header-banner {
+        background: linear-gradient(135deg, #112233 0%, #1f3a60 100%);
+        color: #ffffff !important;
+        padding: 24px;
+        margin: -20px -20px 24px -20px;
+        border-bottom: 4px solid #31a354;
+      }
+      .title-header-banner h2 {
+        margin: 0;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .sidebar-panel-styled {
+        background-color: #ffffff;
+        color: #212529;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      }
+      /* Fixes text contrast completely when user switches interface themes */
+      [data-bs-theme='dark'] .sidebar-panel-styled {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #334155;
+      }
+    "))
+  ),
+  
+  # Custom Header Banner
+  div(class = "title-header-banner",
+      tags$h2("Fantasy Sports Pack Player Performance Tool (2025 Regular Season)")
+  ),
+  
   sidebarLayout(
     sidebarPanel(
+      class = "sidebar-panel-styled",
       # Add a clickable button to toggle light/dark modes for the UI container only
       div(style = "display: flex; justify-content: space-between; align-items: center;",
           p("Theme Toggle:", style = "margin: 0; font-weight: bold;"),
@@ -121,6 +168,14 @@ server <- function(input, output, session) {
     
     current_position <- player_info$position
     current_team <- player_info$team
+    
+    # Lookup team colors securely to keep app compliant with copyright rules
+    player_colors <- team_colors_db |>
+      filter(team_abbr == current_team) |>
+      slice(1)
+    
+    primary_color <- if (nrow(player_colors) > 0) player_colors$team_color else "#112233"
+    secondary_color <- if (nrow(player_colors) > 0) player_colors$team_color2 else "#636363"
     
     # Dynamic thresholds (Top 12 and Top 24) tailored specifically to the player's position
     weekly_thresholds <- raw_stats |>
@@ -214,7 +269,8 @@ server <- function(input, output, session) {
         y = "PPR Fantasy Points",
         x = "Opponent / Game Week",
         caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-        tag = player_info$player_id
+        # MODIFICATION: Replaced trademarked player headshot payload with a text badge in team colors
+        tag = paste0("<span style='color:", primary_color, "; border:2px solid ", primary_color, "; padding:4px 8px; border-radius:4px; font-family:Oswald; font-weight:bold;'>", current_team, "</span>")
       ) +
       theme_minimal() +
       theme(
@@ -226,7 +282,8 @@ server <- function(input, output, session) {
         plot.subtitle = ggtext::element_markdown(size = 12),
         plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
         plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
-        plot.tag = nflplotR::element_nfl_headshot(size = 5, hjust = 1, vjust = 1),
+        # MODIFICATION: Changed theme element to markdown text instead of headshot images
+        plot.tag = ggtext::element_markdown(vjust = 1, hjust = 1),
         plot.tag.position = c(1, 1)
       )
     

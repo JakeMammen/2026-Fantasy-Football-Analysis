@@ -178,6 +178,9 @@ gt_table <- final_stats |>
 # Display the table
 gt_table
 
+gtsave(gt_table, 
+       filename = "output/tables/2025_ppr_per_game_RB.png")
+
 # Load 2025 regular season player stats (includes fantasy_points_ppr)
 wr_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "WR", season_type == "REG")
@@ -353,6 +356,9 @@ wr_gt_table <- wr_final_stats |>
 # Display the table
 wr_gt_table
 
+gtsave(wr_gt_table, 
+       filename = "output/tables/2025_ppr_per_game_WR.png")
+
 # Load 2025 regular season player stats (includes fantasy_points_ppr)
 te_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "TE", season_type == "REG")
@@ -527,6 +533,9 @@ te_gt_table <- te_final_stats |>
 # Display the table
 te_gt_table
 
+gtsave(te_gt_table, 
+       filename = "output/tables/2025_ppr_per_game_TE.png")
+
 # Load 2025 regular season player stats (includes fantasy_points_ppr)
 qb_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "QB", season_type == "REG")
@@ -700,3 +709,6 @@ qb_gt_table <- qb_final_stats |>
 
 # Display the table
 qb_gt_table
+
+gtsave(qb_gt_table, 
+       filename = "output/tables/2025_ppr_per_game_QB.png")
