@@ -20,10 +20,10 @@ roster <- nflreadr::load_rosters(2025) %>%
 
 # Process passing/receiving stats
 pass_df <- pbp %>%
-  filter(position %in% c("WR")) %>%  # Filter for WRs early
+  filter(position %in% c("WR")) %>% # Filter for WRs early
   dplyr::select(
-    season, week, team, player_id, player_name, 
-    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds, 
+    season, week, team, player_id, player_name,
+    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds,
     receiving_fumbles_lost, receiving_2pt_conversions
   ) %>%
   mutate(
@@ -53,8 +53,8 @@ pass_df <- pbp %>%
       TRUE ~ player_name
     ),
     team = case_when(
-      player_id == "00-0031381" ~ "LAR",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "LAR", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0038117" ~ "TEN",
       player_id == "00-0031588" ~ "WAS",
       player_id == "00-0036252" ~ "PIT",
@@ -89,7 +89,7 @@ pass_df <- pbp %>%
 rush_df <- pbp %>%
   filter(position %in% c("WR"), rushing_yards > 0 | rushing_tds > 0) %>%
   dplyr::select(
-    season, week, team, player_id, player_name, 
+    season, week, team, player_id, player_name,
     position, rushing_yards, rushing_tds, rushing_fumbles_lost, rushing_2pt_conversions
   ) %>%
   mutate(
@@ -117,8 +117,8 @@ rush_df <- pbp %>%
       TRUE ~ player_name
     ),
     team = case_when(
-      player_id == "00-0031381" ~ "LAR",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "LAR", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0038117" ~ "TEN",
       player_id == "00-0031588" ~ "WAS",
       player_id == "00-0036252" ~ "PIT",
@@ -141,7 +141,7 @@ rush_df <- pbp %>%
       TRUE ~ team
     ),
     fumble_penalty = ifelse(rushing_fumbles_lost >= 1, -2 * rushing_fumbles_lost, 0),
-    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) + 
+    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) +
       (rushing_2pt_conversions * 2) + fumble_penalty,
     rush_attempt = 1,
     game_played = 1
@@ -189,8 +189,8 @@ avg_fp_df <- pass_df %>%
   group_by(player_name, position, player_id) %>%
   summarize(
     team = max(case_when(
-      player_id == "00-0031381" ~ "LAR",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "LAR", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0038117" ~ "TEN",
       player_id == "00-0031588" ~ "WAS",
       player_id == "00-0036252" ~ "PIT",
@@ -226,8 +226,8 @@ avg_fp_df <- pass_df %>%
       group_by(player_name, position, player_id) %>%
       summarize(
         team = max(case_when(
-          player_id == "00-0031381" ~ "LAR",  # D.Adams
-          player_id == "00-0037240" ~ "DET",  # J.Williams
+          player_id == "00-0031381" ~ "LAR", # D.Adams
+          player_id == "00-0037240" ~ "DET", # J.Williams
           player_id == "00-0038117" ~ "TEN",
           player_id == "00-0031588" ~ "WAS",
           player_id == "00-0036252" ~ "PIT",
@@ -284,18 +284,32 @@ avg_fp_df <- pass_df %>%
   filter(position == "WR", games >= 8) %>%
   dplyr::select(team, player_name, games, targets, catches, yards, td, fumbles, PPR_pts, rec_exp, yds_exp, tds_exp, total_expected_points, forp)
 
+# Add team colors and create colored abbreviations
+team_info <- teams_colors_logos %>%
+  select(team_abbr, team_color) %>%
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
+
+avg_fp_df <- avg_fp_df %>%
+  left_join(team_info, by = c("team" = "team_abbr")) %>%
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) %>%
+  select(-team_color)
+
 # Create the gt table
 fp_WR2025 <- avg_fp_df %>%
   arrange(-PPR_pts) %>%
   dplyr::slice(1:100) %>%
-  mutate(Rank = paste0('#', row_number())) %>%
+  mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2025 Actual vs. Expected PPR Fantasy Points Receivers**')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
     player_name = '',
-    team = '',
+    team = 'Team',
     targets = 'Targ',
     catches = 'Rec',
     yards = 'Yds',
@@ -310,9 +324,10 @@ fp_WR2025 <- avg_fp_df %>%
   ) %>%
   fmt_number(columns = vars(PPR_pts, total_expected_points), decimals = 1) %>%
   fmt_number(columns = vars(yards, catches, yds_exp, rec_exp, tds_exp), decimals = 0, sep_mark = ',') %>%
+  fmt_markdown(columns = vars(team)) %>%
   tab_style(style = cell_text(size = 'x-large'), locations = cells_title(groups = 'title')) %>%
   tab_style(style = cell_text(align = 'center', size = 'medium'), locations = cells_body()) %>%
-  tab_style(style = cell_text(align = 'left'), locations = cells_body(vars(player_name))) %>%
+  tab_style(style = cell_text(align = 'center'), locations = cells_body(vars(player_name))) %>%
   tab_spanner(label = md('**Actual**'), columns = vars(catches, yards, td, fumbles, PPR_pts)) %>%
   tab_spanner(label = md('**Expected**'), columns = vars(rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
@@ -325,11 +340,6 @@ fp_WR2025 <- avg_fp_df %>%
     colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-50, 0, 72)),
     autocolor_text = FALSE
   ) %>%
-  text_transform(
-    locations = cells_body(vars(team)),
-    fn = function(x) web_image(url = paste0('https://a.espncdn.com/i/teamlogos/nfl/500/', x, '.png'))
-  ) %>%
-  cols_width(vars(team) ~ px(45)) %>%
   tab_options(
     table.font.color = 'darkblue',
     data_row.padding = '2px',
@@ -355,11 +365,11 @@ fp_WR2025 <- avg_fp_df %>%
       paste0(
         "<div style='display: flex; align-items: center; justify-content: space-between; width: 100%;'>
          <div style='font-size: 12px;'>
-           <b>Data:</b> nflreadr | <b>Source:</b> Credit: Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
+           <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -375,10 +385,10 @@ gtsave(fp_WR2025,
 
 # Process passing/receiving stats
 passTE_df <- pbp %>%
-  filter(position %in% c("TE")) %>%  # Filter for TEs early
+  filter(position %in% c("TE")) %>% # Filter for TEs early
   dplyr::select(
-    season, week, team, player_id, player_name, 
-    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds, 
+    season, week, team, player_id, player_name,
+    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds,
     receiving_fumbles_lost, receiving_2pt_conversions
   ) %>%
   mutate(
@@ -395,8 +405,8 @@ passTE_df <- pbp %>%
       TRUE ~ player_name
     ),
     team = case_when(
-      player_id == "00-0031381" ~ "NYJ",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "NYJ", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0037809" ~ "WAS",
       player_id == "00-0033885" ~ "LAC",
       player_id == "00-0037838" ~ "NYG",
@@ -418,7 +428,7 @@ passTE_df <- pbp %>%
 rushTE_df <- pbp %>%
   filter(position %in% c("TE"), rushing_yards > 0 | rushing_tds > 0 | rushing_fumbles_lost == 1) %>%
   dplyr::select(
-    season, week, team, player_id, player_name, 
+    season, week, team, player_id, player_name,
     position, rushing_yards, rushing_tds, rushing_fumbles_lost, rushing_2pt_conversions
   ) %>%
   mutate(
@@ -432,8 +442,8 @@ rushTE_df <- pbp %>%
       TRUE ~ player_name
     ),
     team = case_when(
-      player_id == "00-0031381" ~ "NYJ",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "NYJ", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0033885" ~ "LAC",
       player_id == "00-0037838" ~ "NYG",
       player_id == "00-0038046" ~ "LAC",
@@ -441,7 +451,7 @@ rushTE_df <- pbp %>%
       TRUE ~ team
     ),
     fumble_penalty = ifelse(rushing_fumbles_lost >= 1, -2 * rushing_fumbles_lost, 0),
-    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) + 
+    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) +
       (rushing_2pt_conversions * 2) + fumble_penalty,
     rush_attempt = 1,
     game_played = 1
@@ -453,7 +463,7 @@ rushTE_df <- pbp %>%
 # Load expected fantasy points for the 2025 season, weeks 1-18
 ff_opportunity <- load_ff_opportunity(seasons = 2025, stat_type = "weekly", model_version = "latest")
 
-# Filter for wide receivers (WR) and select relevant columns
+# Filter for tight ends (TE) and select relevant columns
 tightends <- ff_opportunity %>%
   filter(position == "TE") %>%
   dplyr::select(
@@ -471,7 +481,7 @@ tightends <- ff_opportunity %>%
     posteam
   )
 
-# Aggregate expected points by receiver across weeks 1-18
+# Aggregate expected points by tight end across weeks 1-18
 tightends_totals <- tightends %>%
   filter(week %in% 1:18) %>%
   group_by(player_id, full_name) %>%
@@ -489,8 +499,8 @@ avg_fpTE_df <- passTE_df %>%
   group_by(player_name, position, player_id) %>%
   summarize(
     team = max(case_when(
-      player_id == "00-0031381" ~ "NYJ",  # D.Adams
-      player_id == "00-0037240" ~ "DET",  # J.Williams
+      player_id == "00-0031381" ~ "NYJ", # D.Adams
+      player_id == "00-0037240" ~ "DET", # J.Williams
       player_id == "00-0033885" ~ "LAC",
       player_id == "00-0037838" ~ "NYG",
       player_id == "00-0038046" ~ "LAC",
@@ -511,8 +521,8 @@ avg_fpTE_df <- passTE_df %>%
       group_by(player_name, position, player_id) %>%
       summarize(
         team = max(case_when(
-          player_id == "00-0031381" ~ "NYJ",  # D.Adams
-          player_id == "00-0037240" ~ "DET",  # J.Williams
+          player_id == "00-0031381" ~ "NYJ", # D.Adams
+          player_id == "00-0037240" ~ "DET", # J.Williams
           player_id == "00-0033885" ~ "LAC",
           player_id == "00-0037838" ~ "NYG",
           player_id == "00-0038046" ~ "LAC",
@@ -554,18 +564,32 @@ avg_fpTE_df <- passTE_df %>%
   filter(position == "TE", games >= 8) %>%
   dplyr::select(team, player_name, games, targets, catches, yards, td, fumbles, PPR_pts, rec_exp, yds_exp, tds_exp, total_expected_points, forp)
 
+# Add team colors and create colored abbreviations
+team_info <- teams_colors_logos %>%
+  select(team_abbr, team_color) %>%
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
+
+avg_fpTE_df <- avg_fpTE_df %>%
+  left_join(team_info, by = c("team" = "team_abbr")) %>%
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) %>%
+  select(-team_color)
+
 # Create the gt table
 fp_TE2025 <- avg_fpTE_df %>%
   arrange(-PPR_pts) %>%
   dplyr::slice(1:60) %>%
-  mutate(Rank = paste0('#', row_number())) %>%
+  mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2025 Actual vs. Expected PPR Fantasy Points Tight Ends**')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
     player_name = '',
-    team = '',
+    team = 'Team',
     targets = 'Targ',
     catches = 'Rec',
     yards = 'Yds',
@@ -580,9 +604,10 @@ fp_TE2025 <- avg_fpTE_df %>%
   ) %>%
   fmt_number(columns = vars(PPR_pts, total_expected_points), decimals = 1) %>%
   fmt_number(columns = vars(yards, catches, yds_exp, rec_exp, tds_exp), decimals = 0, sep_mark = ',') %>%
+  fmt_markdown(columns = vars(team)) %>%
   tab_style(style = cell_text(size = 'x-large'), locations = cells_title(groups = 'title')) %>%
   tab_style(style = cell_text(align = 'center', size = 'medium'), locations = cells_body()) %>%
-  tab_style(style = cell_text(align = 'left'), locations = cells_body(vars(player_name))) %>%
+  tab_style(style = cell_text(align = 'center'), locations = cells_body(vars(player_name))) %>%
   tab_spanner(label = md('**Actual**'), columns = vars(catches, yards, td, fumbles, PPR_pts)) %>%
   tab_spanner(label = md('**Expected**'), columns = vars(rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
@@ -595,11 +620,6 @@ fp_TE2025 <- avg_fpTE_df %>%
     colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-26, 0, 47)),
     autocolor_text = FALSE
   ) %>%
-  text_transform(
-    locations = cells_body(vars(team)),
-    fn = function(x) web_image(url = paste0('https://a.espncdn.com/i/teamlogos/nfl/500/', x, '.png'))
-  ) %>%
-  cols_width(vars(team) ~ px(45)) %>%
   tab_options(
     table.font.color = 'darkblue',
     data_row.padding = '2px',
@@ -625,11 +645,11 @@ fp_TE2025 <- avg_fpTE_df %>%
       paste0(
         "<div style='display: flex; align-items: center; justify-content: space-between; width: 100%;'>
          <div style='font-size: 12px;'>
-           <b>Data:</b> nflreadr | <b>Source:</b> Credit: Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
+           <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -649,36 +669,50 @@ gtsave(fp_TE2025,
 library(nflfastR)
 library(ggimage)
 library(ggrepel)
+library(stringr)
+library(ggtext)
 
 # Load play-by-play data
 pbp <- load_pbp(2025) |>
   filter(week >= 1 & week <= 18)
 
 avg_exp_fpWR_df <- avg_fp_df %>%
-  mutate(fp_game = PPR_pts / games) %>%
+  mutate(
+    fp_game = PPR_pts / games,
+    # Extract clean abbreviation whether team is plain text or HTML
+    team_clean = if_else(
+      str_detect(team, "<span"),
+      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
+      team
+    )
+  ) %>%
   filter(games >= 10 & fp_game >= 8) %>%
-  left_join(teams_colors_logos, by = c("team" = "team_abbr")) 
+  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
 
 wr_actvsexp_TD <- ggplot(avg_exp_fpWR_df, aes(x = td, y = tds_exp)) +
-  geom_image(aes(image = team_logo_espn), size = 0.05) +
+  geom_point(aes(color = team_color), size = 3.5) +
+  scale_color_identity() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
   geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
   labs(
     title = "2025 NFL Wide Receivers: Actual vs. Expected Touchdowns",
     x = "Actual Touchdowns",
     y = "Expected Touchdowns",
-    subtitle = "Data: nflfastr and nflreadr | By: Jake Mammen | @FantasySPack | Min. 10 games & 8 Fpts per game",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 10 games & 8 Fpts per game",
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +
-  geom_label(x = 5, y = 12, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5 ) +
-  geom_label(x = 12, y = 4, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5,) +
+  geom_label(x = 5, y = 12, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
+  geom_label(x = 12, y = 4, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
   theme_minimal() +
   theme(
     plot.title = ggplot2::element_text(face = "bold"),
     plot.title.position = "plot",
+    plot.subtitle = ggtext::element_markdown(),
     plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
     plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
   )
+
+wr_actvsexp_TD
 
 ggsave(wr_actvsexp_TD,
   filename = "output/graphs/wr_actvsexp_TD.png",
@@ -692,27 +726,37 @@ ggsave(wr_actvsexp_TD,
 #############################################
 
 avg_exp_fpTE_df <- avg_fpTE_df %>%
-  mutate(fp_game = PPR_pts / games) %>%
+  mutate(
+    fp_game = PPR_pts / games,
+    # Extract clean abbreviation whether team is plain text or HTML
+    team_clean = if_else(
+      str_detect(team, "<span"),
+      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
+      team
+    )
+  ) %>%
   filter(games >= 8 & fp_game >= 7) %>%
-  left_join(teams_colors_logos, by = c("team" = "team_abbr"))
+  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
 
 te_actvsexp_TD <- ggplot(avg_exp_fpTE_df, aes(x = td, y = tds_exp)) +
-  geom_image(aes(image = team_logo_espn), size = 0.05) +
+  geom_point(aes(color = team_color), size = 3.5) +
+  scale_color_identity() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
   geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
   labs(
     title = "2025 NFL Tight Ends: Actual vs. Expected Touchdowns",
     x = "Actual Touchdowns",
     y = "Expected Touchdowns",
-    subtitle = "Data: nflfastr and nflreadr | By: Jake Mammen | @FantasySPack | Min. 8 games & 7 Fpts per game",
+    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 8 games & 7 Fpts per game",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +
-  geom_label(x = 2, y = 7.5, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5 ) +
-  geom_label(x = 8, y = 1, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5,) +
+  geom_label(x = 2, y = 7.5, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
+  geom_label(x = 8, y = 1, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
   theme_minimal() +
   theme(
     plot.title = ggplot2::element_text(face = "bold"),
     plot.title.position = "plot",
+    plot.subtitle = ggtext::element_markdown(),
     plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
     plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
   )
@@ -754,10 +798,10 @@ roster <- nflreadr::load_rosters(2025) %>%
 
 # Process passing/receiving stats
 passRB_df <- pbp %>%
-  filter(position %in% c("RB")) %>%  # Filter for RBs early
+  filter(position %in% c("RB")) %>% # Filter for RBs early
   dplyr::select(
-    season, week, team, player_id, player_name, 
-    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds, 
+    season, week, team, player_id, player_name,
+    position, receptions, targets, passing_yards, passing_tds, receiving_yards, receiving_tds,
     receiving_fumbles_lost, receiving_2pt_conversions, fumble_recovery_tds
   ) %>%
   mutate(
@@ -790,7 +834,7 @@ passRB_df <- pbp %>%
 rushRB_df <- pbp %>%
   filter(position %in% c("RB"), rushing_yards > 0 | rushing_tds > 0) %>%
   dplyr::select(
-    season, week, team, player_id, player_name, 
+    season, week, team, player_id, player_name,
     position, carries, rushing_yards, rushing_tds, rushing_fumbles_lost, rushing_2pt_conversions
   ) %>%
   mutate(
@@ -811,7 +855,7 @@ rushRB_df <- pbp %>%
       TRUE ~ player_name
     ),
     fumble_penalty = ifelse(rushing_fumbles_lost >= 1, -2 * rushing_fumbles_lost, 0),
-    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) + 
+    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) +
       (rushing_2pt_conversions * 2) + fumble_penalty,
     rush_attempt = 1,
     game_played = 1
@@ -823,7 +867,7 @@ rushRB_df <- pbp %>%
 # Load expected fantasy points for the 2025 season, weeks 1-18
 ff_opportunity <- load_ff_opportunity(seasons = 2025, stat_type = "weekly", model_version = "latest")
 
-# Filter for wide receivers (WR) and select relevant columns
+# Filter for running backs (RB) and select relevant columns
 runningbacks <- ff_opportunity %>%
   filter(position == "RB") %>%
   dplyr::select(
@@ -841,7 +885,7 @@ runningbacks <- ff_opportunity %>%
     posteam
   )
 
-# Aggregate expected points by receiver across weeks 1-18
+# Aggregate expected points by running back across weeks 1-18
 runningback_totals <- runningbacks %>%
   filter(week %in% 1:18) %>%
   group_by(player_id, full_name) %>%
@@ -938,18 +982,32 @@ avg_fpRB_df <- passRB_df %>%
   filter(position == "RB", games >= 8) %>%
   dplyr::select(team, player_name, games, rush_attempts, targets, catches, yards, td, fumbles, PPR_pts, rec_exp, yds_exp, tds_exp, total_expected_points, forp)
 
+# Add team colors and create colored abbreviations
+team_info <- teams_colors_logos %>%
+  select(team_abbr, team_color) %>%
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
+
+avg_fpRB_df <- avg_fpRB_df %>%
+  left_join(team_info, by = c("team" = "team_abbr")) %>%
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) %>%
+  select(-team_color)
+
 # Create the gt table
 fp_RB2025 <- avg_fpRB_df %>%
   arrange(-PPR_pts) %>%
   dplyr::slice(1:60) %>%
-  mutate(Rank = paste0('#', row_number())) %>%
+  mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2025 Actual vs. Expected PPR Fantasy Points Running Backs**')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
     player_name = '',
-    team = '',
+    team = 'Team',
     rush_attempts = 'Car',
     targets = 'Targ',
     catches = 'Rec',
@@ -965,9 +1023,10 @@ fp_RB2025 <- avg_fpRB_df %>%
   ) %>%
   fmt_number(columns = vars(PPR_pts, total_expected_points), decimals = 1) %>%
   fmt_number(columns = vars(rush_attempts, yards, catches, yds_exp, rec_exp, tds_exp), decimals = 0, sep_mark = ',') %>%
+  fmt_markdown(columns = vars(team)) %>%
   tab_style(style = cell_text(size = 'x-large'), locations = cells_title(groups = 'title')) %>%
   tab_style(style = cell_text(align = 'center', size = 'medium'), locations = cells_body()) %>%
-  tab_style(style = cell_text(align = 'left'), locations = cells_body(vars(player_name))) %>%
+  tab_style(style = cell_text(align = 'center'), locations = cells_body(vars(player_name))) %>%
   tab_spanner(label = md('**Actual**'), columns = vars(games, rush_attempts, catches, yards, td, fumbles, PPR_pts)) %>%
   tab_spanner(label = md('**Expected**'), columns = vars(targets, rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
@@ -980,11 +1039,6 @@ fp_RB2025 <- avg_fpRB_df %>%
     colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-40, 0, 62)),
     autocolor_text = FALSE
   ) %>%
-  text_transform(
-    locations = cells_body(vars(team)),
-    fn = function(x) web_image(url = paste0('https://a.espncdn.com/i/teamlogos/nfl/500/', x, '.png'))
-  ) %>%
-  cols_width(vars(team) ~ px(45)) %>%
   tab_options(
     table.font.color = 'darkblue',
     data_row.padding = '2px',
@@ -1010,11 +1064,11 @@ fp_RB2025 <- avg_fpRB_df %>%
       paste0(
         "<div style='display: flex; align-items: center; justify-content: space-between; width: 100%;'>
          <div style='font-size: 12px;'>
-           <b>Data:</b> nflreadr | <b>Source:</b> Credit: Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
+           <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -1050,10 +1104,10 @@ roster <- nflreadr::load_rosters(2025) %>%
 
 # Process passing/receiving stats
 passQB_df <- pbp %>%
-  filter(position %in% c("QB")) %>% 
+  filter(position %in% c("QB")) %>%
   dplyr::select(
-    season, week, team, player_id, player_name, 
-    position, attempts, receptions, receiving_yards, receiving_tds, passing_yards, passing_tds, 
+    season, week, team, player_id, player_name,
+    position, attempts, receptions, receiving_yards, receiving_tds, passing_yards, passing_tds,
     passing_interceptions, sack_fumbles_lost, rushing_fumbles_lost, passing_2pt_conversions
   ) %>%
   mutate(
@@ -1063,7 +1117,8 @@ passQB_df <- pbp %>%
       player_id == "00-0026158" ~ "J.Flacco",
       player_id == "00-0036945" ~ "J.Fields",
       player_id == "00-0029604" ~ "K.Cousins",
-      TRUE ~ player_name),
+      TRUE ~ player_name
+    ),
     sack_fumbles_penalty = ifelse(sack_fumbles_lost >= 1, -2 * sack_fumbles_lost, 0),
     int_penalty = ifelse(passing_interceptions >= 1, -2 * passing_interceptions, 0),
     PPR_points = (passing_yards * 0.04) + (passing_tds * 4) + (passing_2pt_conversions * 2) +
@@ -1077,7 +1132,7 @@ passQB_df <- pbp %>%
 rushQB_df <- pbp %>%
   filter(position %in% c("QB"), rushing_yards >= 0 | rushing_tds >= 0) %>%
   dplyr::select(
-    season, week, team, player_id, player_name, 
+    season, week, team, player_id, player_name,
     position, carries, rushing_yards, rushing_tds, rushing_fumbles_lost, rushing_2pt_conversions
   ) %>%
   mutate(
@@ -1087,9 +1142,10 @@ rushQB_df <- pbp %>%
       player_id == "00-0026158" ~ "J.Flacco",
       player_id == "00-0036945" ~ "J.Fields",
       player_id == "00-0029604" ~ "K.Cousins",
-      TRUE ~ player_name),
+      TRUE ~ player_name
+    ),
     fumble_penalty = ifelse(rushing_fumbles_lost >= 1, -2 * rushing_fumbles_lost, 0),
-    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) + 
+    PPR_points = (rushing_yards / 10) + (rushing_tds * 6) +
       (rushing_2pt_conversions * 2) + fumble_penalty,
     rush_attempt = 1,
     game_played = 1
@@ -1156,7 +1212,7 @@ avg_fpQB_df <- passQB_df %>%
       group_by(player_name, position, player_id) %>%
       summarize(
         team = max(case_when(
-          player_id == "00-0038542" ~ "ATL",  # Adjust if specific QB name correction needed
+          player_id == "00-0038542" ~ "ATL",
           player_id == "00-0030565" ~ "NYJ",
           player_id == "00-0036212" ~ "ATL",
           player_id == "00-0026158" ~ "CIN",
@@ -1197,21 +1253,35 @@ avg_fpQB_df <- passQB_df %>%
     forp = PPR_pts - total_expected_points
   ) %>%
   filter(position == "QB", games >= 8) %>%
-  dplyr::select(team, player_name, games, yards, td, interceptions, fumbles, PPR_pts, 
+  dplyr::select(team, player_name, games, yards, td, interceptions, fumbles, PPR_pts,
                 pass_yds_exp, rush_yds_exp, tds_exp, total_expected_points, forp)
+
+# Add team colors and create colored abbreviations
+team_info <- teams_colors_logos %>%
+  select(team_abbr, team_color) %>%
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
+
+avg_fpQB_df <- avg_fpQB_df %>%
+  left_join(team_info, by = c("team" = "team_abbr")) %>%
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) %>%
+  select(-team_color)
 
 # Create the gt table
 fp_QB2025 <- avg_fpQB_df %>%
   arrange(-PPR_pts) %>%
-  dplyr::slice(1:37) %>%  # Adjust for typical number of starting QBs
-  mutate(Rank = paste0('#', row_number())) %>%
+  dplyr::slice(1:37) %>% # Adjust for typical number of starting QBs
+  mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2025 Actual vs. Expected PPR Fantasy Points Quarterbacks**')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
     player_name = '',
-    team = '',
+    team = 'Team',
     yards = 'Yards',
     td = 'TD',
     interceptions = 'Int',
@@ -1225,9 +1295,10 @@ fp_QB2025 <- avg_fpQB_df %>%
   ) %>%
   fmt_number(columns = vars(PPR_pts, total_expected_points), decimals = 1) %>%
   fmt_number(columns = vars(yards, pass_yds_exp, rush_yds_exp, tds_exp), decimals = 0, sep_mark = ',') %>%
+  fmt_markdown(columns = vars(team)) %>%
   tab_style(style = cell_text(size = 'x-large'), locations = cells_title(groups = 'title')) %>%
   tab_style(style = cell_text(align = 'center', size = 'medium'), locations = cells_body()) %>%
-  tab_style(style = cell_text(align = 'left'), locations = cells_body(vars(player_name))) %>%
+  tab_style(style = cell_text(align = 'center'), locations = cells_body(vars(player_name))) %>%
   tab_spanner(label = md('**Actual**'), columns = vars(games, yards, td, interceptions, fumbles, PPR_pts)) %>%
   tab_spanner(label = md('**Expected**'), columns = vars(pass_yds_exp, rush_yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
@@ -1240,11 +1311,6 @@ fp_QB2025 <- avg_fpQB_df %>%
     colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-42, 0, 46)),
     autocolor_text = FALSE
   ) %>%
-  text_transform(
-    locations = cells_body(vars(team)),
-    fn = function(x) web_image(url = paste0('https://a.espncdn.com/i/teamlogos/nfl/500/', x, '.png'))
-  ) %>%
-  cols_width(vars(team) ~ px(45)) %>%
   tab_options(
     table.font.color = 'darkblue',
     data_row.padding = '2px',
@@ -1270,11 +1336,11 @@ fp_QB2025 <- avg_fpQB_df %>%
       paste0(
         "<div style='display: flex; align-items: center; justify-content: space-between; width: 100%;'>
          <div style='font-size: 12px;'>
-           <b>Data:</b> nflreadr | <b>Source:</b> Credit: Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
+           <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -1296,27 +1362,37 @@ pbp <- load_pbp(2025) |>
   filter(week >= 1 & week <= 18)
 
 avg_exp_fpRB_df <- avg_fpRB_df %>%
-  mutate(fp_game = PPR_pts / games) %>%
+  mutate(
+    fp_game = PPR_pts / games,
+    # Extract clean abbreviation whether team is plain text or HTML
+    team_clean = if_else(
+      str_detect(team, "<span"),
+      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
+      team
+    )
+  ) %>%
   filter(games >= 8 & fp_game >= 8) %>%
-  left_join(teams_colors_logos, by = c("team" = "team_abbr")) 
+  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
 
 rb_actvsexp_TD <- ggplot(avg_exp_fpRB_df, aes(x = td, y = tds_exp)) +
-  geom_image(aes(image = team_logo_espn), size = 0.05) +
+  geom_point(aes(color = team_color), size = 3.5) +
+  scale_color_identity() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
   geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
   labs(
     title = "2025 NFL Running Backs: Actual vs. Expected Touchdowns",
     x = "Actual Touchdowns",
     y = "Expected Touchdowns",
-    subtitle = "Data: nflfastr and nflreadr | By: Jake Mammen | @FantasySPack | Min. 8 games & 8 Fpts per game",
+    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 8 games & 8 Fpts per game",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +
-  geom_label(x = 5, y = 15, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5 ) +
-  geom_label(x = 15, y = 5, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5,) +
+  geom_label(x = 5, y = 15, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
+  geom_label(x = 15, y = 5, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
   theme_minimal() +
   theme(
     plot.title = ggplot2::element_text(face = "bold"),
     plot.title.position = "plot",
+    plot.subtitle = ggtext::element_markdown(),
     plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
     plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
   )
@@ -1340,27 +1416,37 @@ pbp <- load_pbp(2025) |>
   filter(week >= 1 & week <= 18)
 
 avg_exp_fpQB_df <- avg_fpQB_df %>%
-  mutate(fp_game = PPR_pts / games) %>%
+  mutate(
+    fp_game = PPR_pts / games,
+    # Extract clean abbreviation whether team is plain text or HTML
+    team_clean = if_else(
+      str_detect(team, "<span"),
+      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
+      team
+    )
+  ) %>%
   filter(games >= 10 & fp_game >= 10) %>%
-  left_join(teams_colors_logos, by = c("team" = "team_abbr")) 
+  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
 
 qb_actvsexp_TD <- ggplot(avg_exp_fpQB_df, aes(x = td, y = tds_exp)) +
-  geom_image(aes(image = team_logo_espn), size = 0.05) +
+  geom_point(aes(color = team_color), size = 3.5) +
+  scale_color_identity() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
   geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
   labs(
     title = "2025 NFL Quarterbacks: Actual vs. Expected Touchdowns",
     x = "Actual Touchdowns",
     y = "Expected Touchdowns",
-    subtitle = "Data: nflfastr and nflreadr | By: Jake Mammen | @FantasySPack | Min. 10 games & 10 Fpts per game",
+    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 10 games & 10 Fpts per game",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +
-  geom_label(x = 20, y = 40, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5 ) +
-  geom_label(x = 40, y = 12, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5,) +
+  geom_label(x = 20, y = 40, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
+  geom_label(x = 40, y = 12, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
   theme_minimal() +
   theme(
     plot.title = ggplot2::element_text(face = "bold"),
     plot.title.position = "plot",
+    plot.subtitle = ggtext::element_markdown(),
     plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
     plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
   )

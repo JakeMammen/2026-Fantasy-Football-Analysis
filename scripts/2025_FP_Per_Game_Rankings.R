@@ -32,7 +32,7 @@ player_stats <- stats |>
     ), na.rm = TRUE)
   ) |>
   mutate(
-    total_games = 9,  # Standard NFL regular season is 17 games in 2024
+    total_games = 9, # Standard NFL regular season is 17 games in 2024
   )
 
 # Calculate weekly ranks and categorize performance as RB1, RB2, or RB3+
@@ -78,35 +78,39 @@ final_stats <- player_stats |>
     rb3_pct,
   )
 
-# Load team logos
-team_logos <- teams_colors_logos |>
-  select(team_abbr, team_logo_espn) |>
-  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))  # Align with stats data
+# Load team colors (aligned abbreviation handling retained)
+team_info <- teams_colors_logos |>
+  select(team_abbr, team_color) |>
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
-# Join team logos and create the gt table
+# Join team colors, create colored abbreviation HTML, and build the gt table
 gt_table <- final_stats |>
-  left_join(team_logos, by = c("team" = "team_abbr")) |>
-  select(rank, player_display_name, team_logo_espn, ppr_per_game, rb1_pct, rb2_pct, rb3_pct) |>
+  left_join(team_info, by = c("team" = "team_abbr")) |>
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) |>
+  select(rank, player_display_name, team, ppr_per_game, rb1_pct, rb2_pct, rb3_pct) |>
   gt() |>
   cols_label(
     rank = "Rank",
     player_display_name = "Player",
-    team_logo_espn = "Team",
+    team = "Team",
     ppr_per_game = "PPR/Game",
     rb1_pct = "RB1 %",
     rb2_pct = "RB2 %",
     rb3_pct = "RB3+ %",
   ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(columns = everything())
+  ) |>
   fmt_number(
     columns = c(ppr_per_game, rb1_pct, rb2_pct, rb3_pct),
     decimals = 1
   ) |>
-  text_transform(
-    locations = cells_body(columns = team_logo_espn),
-    fn = function(x) {
-      web_image(url = x, height = 30)
-    }
-  ) |>
+  fmt_markdown(columns = team) |>
   # Apply conditional coloring to RB1, RB2, RB3+ percentages
   tab_style(
     style = cell_fill(color = "#31a354"),
@@ -168,7 +172,7 @@ gt_table <- final_stats |>
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -185,7 +189,7 @@ gtsave(gt_table,
 wr_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "WR", season_type == "REG")
 
-# Compute weekly RB12 and RB24 thresholds (12th and 24th highest PPR among RBs each week)
+# Compute weekly WR12 and WR24 thresholds (12th and 24th highest PPR among WRs each week)
 wr_weekly_thresholds <- wr_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -209,11 +213,11 @@ wr_player_stats <- wr_stats |>
     ), na.rm = TRUE)
   ) |>
   mutate(
-    total_games = 9,  # Standard NFL regular season is 17 games in 2024
+    total_games = 9, # Standard NFL regular season is 17 games in 2024
   ) |>
   filter(player_display_name != "Tyreek Hill")
 
-# Calculate weekly ranks and categorize performance as RB1, RB2, or RB3+
+# Calculate weekly ranks and categorize performance as WR1, WR2, or WR3+
 wr_weekly_ranks <- wr_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -225,7 +229,7 @@ wr_weekly_ranks <- wr_stats |>
     TRUE ~ "WR3+"
   ))
 
-# Compute RB1, RB2, RB3+ percentages for each player
+# Compute WR1, WR2, WR3+ percentages for each player
 wr_player_categories <- wr_weekly_ranks |>
   group_by(player_id, player_display_name) |>
   summarise(
@@ -239,7 +243,7 @@ wr_player_categories <- wr_weekly_ranks |>
     .groups = "drop"
   )
 
-# Join player stats with category percentages and filter for players with at least 5 games
+# Join player stats with category percentages and filter for players with at least 4 games
 wr_final_stats <- wr_player_stats |>
   left_join(wr_player_categories, by = c("player_id", "player_display_name")) |>
   arrange(desc(ppr_per_game)) |>
@@ -256,36 +260,40 @@ wr_final_stats <- wr_player_stats |>
     wr3_pct,
   )
 
-# Load team logos
-team_logos <- teams_colors_logos |>
-  select(team_abbr, team_logo_espn) |>
-  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))  # Align with stats data
+# Load team colors (aligned abbreviation handling retained)
+team_info <- teams_colors_logos |>
+  select(team_abbr, team_color) |>
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
-# Join team logos and create the gt table
+# Join team colors, create colored abbreviation HTML, and build the gt table
 wr_gt_table <- wr_final_stats |>
-  left_join(team_logos, by = c("team" = "team_abbr")) |>
-  select(rank, player_display_name, team_logo_espn, ppr_per_game, wr1_pct, wr2_pct, wr3_pct) |>
+  left_join(team_info, by = c("team" = "team_abbr")) |>
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) |>
+  select(rank, player_display_name, team, ppr_per_game, wr1_pct, wr2_pct, wr3_pct) |>
   gt() |>
   cols_label(
     rank = "Rank",
     player_display_name = "Player",
-    team_logo_espn = "Team",
+    team = "Team",
     ppr_per_game = "PPR/Game",
     wr1_pct = "WR1 %",
     wr2_pct = "WR2 %",
     wr3_pct = "WR3+ %",
   ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(columns = everything())
+  ) |>
   fmt_number(
     columns = c(ppr_per_game, wr1_pct, wr2_pct, wr3_pct),
     decimals = 1
   ) |>
-  text_transform(
-    locations = cells_body(columns = team_logo_espn),
-    fn = function(x) {
-      web_image(url = x, height = 30)
-    }
-  ) |>
-  # Apply conditional coloring to RB1, RB2, RB3+ percentages
+  fmt_markdown(columns = team) |>
+  # Apply conditional coloring to WR1, WR2, WR3+ percentages
   tab_style(
     style = cell_fill(color = "#31a354"),
     locations = cells_body(
@@ -346,7 +354,7 @@ wr_gt_table <- wr_final_stats |>
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -363,7 +371,7 @@ gtsave(wr_gt_table,
 te_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "TE", season_type == "REG")
 
-# Compute weekly RB12 and RB24 thresholds (12th and 24th highest PPR among RBs each week)
+# Compute weekly TE12 and TE24 thresholds (12th and 24th highest PPR among TEs each week)
 te_weekly_thresholds <- te_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -386,11 +394,11 @@ te_player_stats <- te_stats |>
     ), na.rm = TRUE)
   ) |>
   mutate(
-    total_games = 9,  # Standard NFL regular season is 17 games in 2024
+    total_games = 9, # Standard NFL regular season is 17 games in 2024
   ) |>
   filter(player_display_name != "Darren Waller" & player_display_name != "Zach Ertz")
 
-# Calculate weekly ranks and categorize performance as RB1, RB2, or RB3+
+# Calculate weekly ranks and categorize performance as TE1, TE2, or TE3+
 te_weekly_ranks <- te_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -402,7 +410,7 @@ te_weekly_ranks <- te_stats |>
     TRUE ~ "TE3+"
   ))
 
-# Compute RB1, RB2, RB3+ percentages for each player
+# Compute TE1, TE2, TE3+ percentages for each player
 te_player_categories <- te_weekly_ranks |>
   group_by(player_id, player_display_name) |>
   summarise(
@@ -416,7 +424,7 @@ te_player_categories <- te_weekly_ranks |>
     .groups = "drop"
   )
 
-# Join player stats with category percentages and filter for players with at least 5 games
+# Join player stats with category percentages and filter for players with at least 4 games
 te_final_stats <- te_player_stats |>
   left_join(te_player_categories, by = c("player_id", "player_display_name")) |>
   arrange(desc(ppr_per_game)) |>
@@ -433,36 +441,40 @@ te_final_stats <- te_player_stats |>
     te3_pct,
   )
 
-# Load team logos
-team_logos <- teams_colors_logos |>
-  select(team_abbr, team_logo_espn) |>
-  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))  # Align with stats data
+# Load team colors (aligned abbreviation handling retained)
+team_info <- teams_colors_logos |>
+  select(team_abbr, team_color) |>
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
-# Join team logos and create the gt table
+# Join team colors, create colored abbreviation HTML, and build the gt table
 te_gt_table <- te_final_stats |>
-  left_join(team_logos, by = c("team" = "team_abbr")) |>
-  select(rank, player_display_name, team_logo_espn, ppr_per_game, te1_pct, te2_pct, te3_pct) |>
+  left_join(team_info, by = c("team" = "team_abbr")) |>
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) |>
+  select(rank, player_display_name, team, ppr_per_game, te1_pct, te2_pct, te3_pct) |>
   gt() |>
   cols_label(
     rank = "Rank",
     player_display_name = "Player",
-    team_logo_espn = "Team",
+    team = "Team",
     ppr_per_game = "PPR/Game",
     te1_pct = "TE1 %",
     te2_pct = "TE2 %",
     te3_pct = "TE3+ %",
   ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(columns = everything())
+  ) |>
   fmt_number(
     columns = c(ppr_per_game, te1_pct, te2_pct, te3_pct),
     decimals = 1
   ) |>
-  text_transform(
-    locations = cells_body(columns = team_logo_espn),
-    fn = function(x) {
-      web_image(url = x, height = 30)
-    }
-  ) |>
-  # Apply conditional coloring to RB1, RB2, RB3+ percentages
+  fmt_markdown(columns = team) |>
+  # Apply conditional coloring to TE1, TE2, TE3+ percentages
   tab_style(
     style = cell_fill(color = "#31a354"),
     locations = cells_body(
@@ -523,7 +535,7 @@ te_gt_table <- te_final_stats |>
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )
@@ -540,7 +552,7 @@ gtsave(te_gt_table,
 qb_stats <- load_player_stats(seasons = 2025) |>
   filter(position == "QB", season_type == "REG")
 
-# Compute weekly RB12 and RB24 thresholds (12th and 24th highest PPR among RBs each week)
+# Compute weekly QB12 and QB24 thresholds (12th and 24th highest PPR among QBs each week)
 qb_weekly_thresholds <- qb_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -564,10 +576,10 @@ qb_player_stats <- qb_stats |>
     ), na.rm = TRUE)
   ) |>
   mutate(
-    total_games = 9,  # Standard NFL regular season is 17 games in 2024
+    total_games = 9, # Standard NFL regular season is 17 games in 2024
   )
 
-# Calculate weekly ranks and categorize performance as RB1, RB2, or RB3+
+# Calculate weekly ranks and categorize performance as QB1, QB2, or QB3+
 qb_weekly_ranks <- qb_stats |>
   group_by(week) |>
   arrange(desc(fantasy_points_ppr)) |>
@@ -579,7 +591,7 @@ qb_weekly_ranks <- qb_stats |>
     TRUE ~ "QB3+"
   ))
 
-# Compute RB1, RB2, RB3+ percentages for each player
+# Compute QB1, QB2, QB3+ percentages for each player
 qb_player_categories <- qb_weekly_ranks |>
   group_by(player_id, player_display_name) |>
   summarise(
@@ -593,7 +605,7 @@ qb_player_categories <- qb_weekly_ranks |>
     .groups = "drop"
   )
 
-# Join player stats with category percentages and filter for players with at least 5 games
+# Join player stats with category percentages and filter for players with at least 4 games
 qb_final_stats <- qb_player_stats |>
   left_join(qb_player_categories, by = c("player_id", "player_display_name")) |>
   arrange(desc(ppr_per_game)) |>
@@ -610,36 +622,40 @@ qb_final_stats <- qb_player_stats |>
     qb3_pct,
   )
 
-# Load team logos
-team_logos <- teams_colors_logos |>
-  select(team_abbr, team_logo_espn) |>
-  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))  # Align with stats data
+# Load team colors (aligned abbreviation handling retained)
+team_info <- teams_colors_logos |>
+  select(team_abbr, team_color) |>
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
-# Join team logos and create the gt table
+# Join team colors, create colored abbreviation HTML, and build the gt table
 qb_gt_table <- qb_final_stats |>
-  left_join(team_logos, by = c("team" = "team_abbr")) |>
-  select(rank, player_display_name, team_logo_espn, ppr_per_game, qb1_pct, qb2_pct, qb3_pct) |>
+  left_join(team_info, by = c("team" = "team_abbr")) |>
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) |>
+  select(rank, player_display_name, team, ppr_per_game, qb1_pct, qb2_pct, qb3_pct) |>
   gt() |>
   cols_label(
     rank = "Rank",
     player_display_name = "Player",
-    team_logo_espn = "Team",
+    team = "Team",
     ppr_per_game = "PPR/Game",
     qb1_pct = "QB1 %",
     qb2_pct = "QB2 %",
     qb3_pct = "QB3+ %",
   ) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(columns = everything())
+  ) |>
   fmt_number(
     columns = c(ppr_per_game, qb1_pct, qb2_pct, qb3_pct),
     decimals = 1
   ) |>
-  text_transform(
-    locations = cells_body(columns = team_logo_espn),
-    fn = function(x) {
-      web_image(url = x, height = 30)
-    }
-  ) |>
-  # Apply conditional coloring to RB1, RB2, RB3+ percentages
+  fmt_markdown(columns = team) |>
+  # Apply conditional coloring to QB1, QB2, QB3+ percentages
   tab_style(
     style = cell_fill(color = "#31a354"),
     locations = cells_body(
@@ -700,7 +716,7 @@ qb_gt_table <- qb_final_stats |>
          </div>",
         local_image(
           filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-          height   = 30
+          height = 30
         ),
         "</div>"
       )

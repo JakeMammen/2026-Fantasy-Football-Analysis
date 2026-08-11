@@ -136,9 +136,8 @@ ggsave(filename = "output/graphs/2025_EPA_best_def.png",
        dpi      = 300,
        units    = "in")
 
-qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(id, -qb_epa), y = qb_epa)) +
+qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
   ggplot2::geom_col(aes(color = team, fill = team), width = 0.5) +
-  geom_text(aes(label = name), vjust = -0.5) +
   nflplotR::scale_color_nfl(type = "secondary") +
   nflplotR::scale_fill_nfl(alpha = 0.4) +
   ggplot2::labs(
@@ -153,10 +152,8 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(id, -qb_epa), y = qb_epa)) +
     plot.title.position = "plot",
     plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
     plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
-    # it's obvious what the x-axis is so we remove the title
     axis.title.x = ggplot2::element_blank(),
-    # this line triggers the replacement of gsis ids with player headshots
-    axis.text.x.bottom = nflplotR::element_nfl_headshot(size = 1)
+    axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, size = 8)
   )
 
 qb_epa

@@ -262,15 +262,26 @@ server <- function(input, output, session) {
         name = NULL
       ) +
       scale_x_discrete(labels = x_labels) +
-      scale_y_continuous(limits = c(0, max(c(player_stats$ppr, player_stats$PosRank12), na.rm = TRUE) * 1.2), breaks = seq(0, 60, 5)) +
+      scale_y_continuous(
+        limits = c(0, max(c(player_stats$ppr, player_stats$PosRank12), na.rm = TRUE) * 1.2),
+        breaks = seq(0, 60, 5)
+      ) +
       labs(
-        title = paste0(input$player_name, ": Week 1 Through Week 18, 2024"),
-        subtitle = paste0("<b>", n_active, " Active Games</b>: ", avg_ppr, " PPR/Game | <b>Position Group</b>: ", current_position, " | <b>Data:</b> nflfastR"),
+        title = paste0(input$player_name, ": Week 1 Through Week 18, 2025"),
+        subtitle = paste0(
+          "<b>", n_active, " Active Games</b>: ", avg_ppr,
+          " PPR/Game | <b>Position Group</b>: ", current_position,
+          " | <b>Data:</b> nflfastR"
+        ),
         y = "PPR Fantasy Points",
         x = "Opponent / Game Week",
         caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-        # MODIFICATION: Replaced trademarked player headshot payload with a text badge in team colors
-        tag = paste0("<span style='color:", primary_color, "; border:2px solid ", primary_color, "; padding:4px 8px; border-radius:4px; font-family:Oswald; font-weight:bold;'>", current_team, "</span>")
+        # Clean block-letter team abbreviation in primary team color (top-right)
+        tag = paste0(
+          "<span style='color:", primary_color,
+          "; font-weight:900; font-size:20px; font-family:Oswald;'>",
+          current_team, "</span>"
+        )
       ) +
       theme_minimal() +
       theme(
@@ -282,9 +293,9 @@ server <- function(input, output, session) {
         plot.subtitle = ggtext::element_markdown(size = 12),
         plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
         plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
-        # MODIFICATION: Changed theme element to markdown text instead of headshot images
+        # Position the team abbreviation in the top-right corner
         plot.tag = ggtext::element_markdown(vjust = 1, hjust = 1),
-        plot.tag.position = c(1, 1)
+        plot.tag.position = c(0.98, 0.98)
       )
     
     return(p)

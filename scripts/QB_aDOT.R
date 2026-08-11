@@ -7,7 +7,6 @@ library(scales)
 # Data preparation
 # ------------------------------------------------------------------
 pbp_r <- load_pbp(2025)
-
 pbp_r_p <- pbp_r |>
   filter(
     play_type == "pass",
@@ -23,14 +22,16 @@ pbp_r_p <- pbp_r |>
       id == "00-0026158" ~ "J.Flacco",
       id == "00-0036945" ~ "J.Fields",
       id == "00-0029604" ~ "K.Cousins",
-      TRUE ~ fantasy_player_name))
+      TRUE ~ fantasy_player_name
+    )
+  )
 
 adot_tbl <- pbp_r_p |>
   group_by(passer_id, passer) |>
   summarise(
-    n     = n(),
-    adot  = mean(air_yards, na.rm = TRUE),
-    team  = names(which.max(table(posteam))),
+    n = n(),
+    adot = mean(air_yards, na.rm = TRUE),
+    team = names(which.max(table(posteam))),
     .groups = "drop",
     team = max(case_when(
       id == "00-0030565" ~ "NYJ",
@@ -39,7 +40,7 @@ adot_tbl <- pbp_r_p |>
       id == "00-0036945" ~ "KC",
       id == "00-0029604" ~ "LV",
       TRUE ~ team
-    ), na.rm = TRUE),
+    ), na.rm = TRUE)
   ) |>
   filter(
     n > 300,
@@ -48,6 +49,20 @@ adot_tbl <- pbp_r_p |>
   ) |>
   arrange(desc(adot)) |>
   mutate(rank = row_number()) |>
+  select(rank, team, passer, n, adot)
+
+# Load team colors and create colored abbreviations
+team_info <- teams_colors_logos |>
+  select(team_abbr, team_color) |>
+  mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
+
+adot_tbl <- adot_tbl |>
+  left_join(team_info, by = c("team" = "team_abbr")) |>
+  mutate(
+    team = paste0(
+      "<span style='color:", team_color, "; font-weight: bold;'>", team, "</span>"
+    )
+  ) |>
   select(rank, team, passer, n, adot)
 
 # ------------------------------------------------------------------
@@ -61,14 +76,15 @@ adot_tbl <- adot_tbl |>
   ) |>
   cols_move_to_start(columns = rank) |>
   cols_label(
-    rank   = "Rank",
-    team   = "Team",
+    rank = "Rank",
+    team = "Team",
     passer = "Quarterback",
-    n      = "# Passes",
-    adot   = "ADOT"
+    n = "# Passes",
+    adot = "ADOT"
   ) |>
   fmt_number(columns = adot, decimals = 1) |>
   fmt_number(columns = n, decimals = 0, sep_mark = ",") |>
+  fmt_markdown(columns = team) |>
   tab_style(
     style = cell_text(size = "x-large"),
     locations = cells_title(groups = "title")
@@ -89,39 +105,29 @@ adot_tbl <- adot_tbl |>
     columns = adot,
     colors = scales::col_numeric(
       palette = c("grey97", "#E03FD8"),
-      domain  = range(adot_tbl$adot, na.rm = TRUE)
+      domain = range(adot_tbl$adot, na.rm = TRUE)
     ),
     autocolor_text = FALSE
   ) |>
-  text_transform(
-    locations = cells_body(columns = team),
-    fn = function(x) {
-      web_image(
-        url = paste0("https://a.espncdn.com/i/teamlogos/nfl/500/", x, ".png"),
-        height = 30
-      )
-    }
-  ) |>
-  cols_width(team ~ px(45)) |>
   tab_options(
-    table.font.color                 = "darkblue",
-    data_row.padding                 = "2px",
-    row_group.padding                = "3px",
+    table.font.color = "darkblue",
+    data_row.padding = "2px",
+    row_group.padding = "3px",
     column_labels.border.bottom.color = "darkblue",
     column_labels.border.bottom.width = 1.4,
-    table_body.border.top.color      = "darkblue",
-    row_group.border.top.width       = 1.5,
-    row_group.border.top.color       = "#999999",
-    table_body.border.bottom.width   = 0.7,
-    table_body.border.bottom.color   = "#999999",
-    row_group.border.bottom.width    = 1,
-    row_group.border.bottom.color    = "darkblue",
-    table.border.top.color           = "transparent",
-    table.background.color           = "#F2F2F2",
-    table.border.bottom.color        = "transparent",
-    source_notes.background.color    = "#F2F2F2",
-    row.striping.background_color    = "#FFFFFF",
-    row.striping.include_table_body  = TRUE
+    table_body.border.top.color = "darkblue",
+    row_group.border.top.width = 1.5,
+    row_group.border.top.color = "#999999",
+    table_body.border.bottom.width = 0.7,
+    table_body.border.bottom.color = "#999999",
+    row_group.border.bottom.width = 1,
+    row_group.border.bottom.color = "darkblue",
+    table.border.top.color = "transparent",
+    table.background.color = "#F2F2F2",
+    table.border.bottom.color = "transparent",
+    source_notes.background.color = "#F2F2F2",
+    row.striping.background_color = "#FFFFFF",
+    row.striping.include_table_body = TRUE
   ) |>
   tab_source_note(
     source_note = html(

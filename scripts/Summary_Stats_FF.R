@@ -3,6 +3,7 @@ library(nflreadr)
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(corrplot)
 
 # Load weekly player stats for the most recent five seasons
 stats <- load_player_stats(seasons = 2021:2025)
