@@ -4,8 +4,8 @@
 .Ruserdata
 
 # Data (keep large or sensitive files out of Git)
-data/*
-!data/.gitkeep
+# data/*
+# !data/.gitkeep
 
 # Output
 output/*
