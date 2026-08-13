@@ -1,5 +1,7 @@
+# app.R
+# Fantasy Sports Pack Player Performance Tool – production-ready for Posit Connect
+
 library(shiny)
-library(nflreadr)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -8,215 +10,39 @@ library(bslib)
 library(thematic)
 library(gt)
 library(htmltools)
+# library(ggpath)   # uncomment if ggpath is required for element_path
 
-# --- 1. PRE-LOAD AND PRE-PROCESS GLOBAL DATA ---
-all_stats <- load_player_stats(seasons = 2025) |>
-  filter(position %in% c("QB", "RB", "WR", "TE"), season_type == "REG")
+# ------------------------------------------------------------------
+# 1. LOAD PRE-SAVED DATA (no network calls)
+# ------------------------------------------------------------------
+all_stats        <- readRDS("data/all_stats.rds")
+raw_schedules    <- readRDS("data/raw_schedules.rds")
+team_colors_db   <- readRDS("data/team_colors_db.rds")
+rb_final_stats   <- readRDS("data/rb_final_stats.rds")
+wr_final_stats   <- readRDS("data/wr_final_stats.rds")
+te_final_stats   <- readRDS("data/te_final_stats.rds")
+qb_final_stats   <- readRDS("data/qb_final_stats.rds")
 
+# Derive the stricter filter used by the interactive plot
 raw_stats <- all_stats |>
   group_by(player_id, player_display_name, team) |>
   mutate(active_games = n()) |>
   ungroup() |>
   filter(active_games >= 7)
 
-# Load total team games to calculate inactive metrics
-raw_schedules <- load_schedules(seasons = 2025) |>
-  filter(game_type == "REG")
-
-# Load team details for copyright-safe color scheme mapping
-team_colors_db <- nflreadr::load_teams() |>
-  dplyr::select(team_abbr, team_color, team_color2)
-
-# Unique player list for reactive searching/sorting alphabetized
 player_choices <- raw_stats |>
   distinct(player_display_name) |>
   pull(player_display_name) |>
   sort()
 
-# --- Ranking data frames (mirroring original script logic) ---
+# Team colour helper (used by both plot and tables)
 team_info <- team_colors_db |>
   select(team_abbr, team_color) |>
   mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
-# RB
-rb_stats <- all_stats |> filter(position == "RB")
-rb_player_stats <- rb_stats |>
-  group_by(player_id, player_display_name, team) |>
-  summarise(
-    active_games = n(),
-    ppr_per_game = mean(fantasy_points_ppr, na.rm = TRUE),
-    .groups = "drop",
-    team = max(case_when(
-      player_display_name == "Travis Etienne" ~ "NO",
-      player_display_name == "Kenny Gainwell" ~ "TB",
-      player_display_name == "Rico Dowdle" ~ "PIT",
-      TRUE ~ team
-    ), na.rm = TRUE)
-  )
-rb_weekly_ranks <- rb_stats |>
-  group_by(week) |>
-  arrange(desc(fantasy_points_ppr)) |>
-  mutate(rank = row_number()) |>
-  select(player_id, player_display_name, week, rank) |>
-  mutate(category = case_when(
-    rank <= 12 ~ "RB1",
-    rank <= 24 ~ "RB2",
-    TRUE ~ "RB3+"
-  ))
-rb_player_categories <- rb_weekly_ranks |>
-  group_by(player_id, player_display_name) |>
-  summarise(
-    total_games = n(),
-    rb1_games = sum(category == "RB1"),
-    rb2_games = sum(category == "RB2"),
-    rb3_games = sum(category == "RB3+"),
-    rb1_pct = round(rb1_games / total_games * 100, 1),
-    rb2_pct = round(rb2_games / total_games * 100, 1),
-    rb3_pct = round(rb3_games / total_games * 100, 1),
-    .groups = "drop"
-  )
-rb_final_stats <- rb_player_stats |>
-  left_join(rb_player_categories, by = c("player_id", "player_display_name")) |>
-  arrange(desc(ppr_per_game)) |>
-  filter(active_games >= 4) |>
-  mutate(rank = row_number()) |>
-  filter(rank <= 24) |>
-  select(rank, player_display_name, team, ppr_per_game, rb1_pct, rb2_pct, rb3_pct)
-
-# WR
-wr_stats <- all_stats |> filter(position == "WR")
-wr_player_stats <- wr_stats |>
-  group_by(player_id, player_display_name, team) |>
-  summarise(
-    active_games = n(),
-    ppr_per_game = mean(fantasy_points_ppr, na.rm = TRUE),
-    .groups = "drop",
-    team = max(case_when(
-      player_display_name == "A.J. Brown" ~ "NE",
-      player_display_name == "Wan'Dale Robinson" ~ "TEN",
-      TRUE ~ team
-    ), na.rm = TRUE)
-  ) |>
-  filter(player_display_name != "Tyreek Hill")
-wr_weekly_ranks <- wr_stats |>
-  group_by(week) |>
-  arrange(desc(fantasy_points_ppr)) |>
-  mutate(rank = row_number()) |>
-  select(player_id, player_display_name, week, rank) |>
-  mutate(category = case_when(
-    rank <= 12 ~ "WR1",
-    rank <= 24 ~ "WR2",
-    TRUE ~ "WR3+"
-  ))
-wr_player_categories <- wr_weekly_ranks |>
-  group_by(player_id, player_display_name) |>
-  summarise(
-    total_games = n(),
-    wr1_games = sum(category == "WR1"),
-    wr2_games = sum(category == "WR2"),
-    wr3_games = sum(category == "WR3+"),
-    wr1_pct = round(wr1_games / total_games * 100, 1),
-    wr2_pct = round(wr2_games / total_games * 100, 1),
-    wr3_pct = round(wr3_games / total_games * 100, 1),
-    .groups = "drop"
-  )
-wr_final_stats <- wr_player_stats |>
-  left_join(wr_player_categories, by = c("player_id", "player_display_name")) |>
-  arrange(desc(ppr_per_game)) |>
-  filter(active_games >= 4) |>
-  mutate(rank = row_number()) |>
-  filter(rank <= 24) |>
-  select(rank, player_display_name, team, ppr_per_game, wr1_pct, wr2_pct, wr3_pct)
-
-# TE
-te_stats <- all_stats |> filter(position == "TE")
-te_player_stats <- te_stats |>
-  group_by(player_id, player_display_name, team) |>
-  summarise(
-    active_games = n(),
-    ppr_per_game = mean(fantasy_points_ppr, na.rm = TRUE),
-    .groups = "drop",
-    team = max(case_when(
-      player_display_name == "David Njoku" ~ "LAC",
-      TRUE ~ team
-    ), na.rm = TRUE)
-  ) |>
-  filter(player_display_name != "Darren Waller" & player_display_name != "Zach Ertz")
-te_weekly_ranks <- te_stats |>
-  group_by(week) |>
-  arrange(desc(fantasy_points_ppr)) |>
-  mutate(rank = row_number()) |>
-  select(player_id, player_display_name, week, rank) |>
-  mutate(category = case_when(
-    rank <= 12 ~ "TE1",
-    rank <= 24 ~ "TE2",
-    TRUE ~ "TE3+"
-  ))
-te_player_categories <- te_weekly_ranks |>
-  group_by(player_id, player_display_name) |>
-  summarise(
-    total_games = n(),
-    te1_games = sum(category == "TE1"),
-    te2_games = sum(category == "TE2"),
-    te3_games = sum(category == "TE3+"),
-    te1_pct = round(te1_games / total_games * 100, 1),
-    te2_pct = round(te2_games / total_games * 100, 1),
-    te3_pct = round(te3_games / total_games * 100, 1),
-    .groups = "drop"
-  )
-te_final_stats <- te_player_stats |>
-  left_join(te_player_categories, by = c("player_id", "player_display_name")) |>
-  arrange(desc(ppr_per_game)) |>
-  filter(active_games >= 4) |>
-  mutate(rank = row_number()) |>
-  filter(rank <= 24) |>
-  select(rank, player_display_name, team, ppr_per_game, te1_pct, te2_pct, te3_pct)
-
-# QB
-qb_stats <- all_stats |> filter(position == "QB")
-qb_player_stats <- qb_stats |>
-  group_by(player_id, player_display_name, team) |>
-  summarise(
-    active_games = n(),
-    ppr_per_game = mean(fantasy_points_ppr, na.rm = TRUE),
-    .groups = "drop",
-    team = max(case_when(
-      player_display_name == "Justin Fields" ~ "KC",
-      player_display_name == "Kyler Murray" ~ "MIN",
-      TRUE ~ team
-    ), na.rm = TRUE)
-  )
-qb_weekly_ranks <- qb_stats |>
-  group_by(week) |>
-  arrange(desc(fantasy_points_ppr)) |>
-  mutate(rank = row_number()) |>
-  select(player_id, player_display_name, week, rank) |>
-  mutate(category = case_when(
-    rank <= 12 ~ "QB1",
-    rank <= 24 ~ "QB2",
-    TRUE ~ "QB3+"
-  ))
-qb_player_categories <- qb_weekly_ranks |>
-  group_by(player_id, player_display_name) |>
-  summarise(
-    total_games = n(),
-    qb1_games = sum(category == "QB1"),
-    qb2_games = sum(category == "QB2"),
-    qb3_games = sum(category == "QB3+"),
-    qb1_pct = round(qb1_games / total_games * 100, 1),
-    qb2_pct = round(qb2_games / total_games * 100, 1),
-    qb3_pct = round(qb3_games / total_games * 100, 1),
-    .groups = "drop"
-  )
-qb_final_stats <- qb_player_stats |>
-  left_join(qb_player_categories, by = c("player_id", "player_display_name")) |>
-  arrange(desc(ppr_per_game)) |>
-  filter(active_games >= 4) |>
-  mutate(rank = row_number()) |>
-  filter(rank <= 24) |>
-  select(rank, player_display_name, team, ppr_per_game, qb1_pct, qb2_pct, qb3_pct)
-
-# Helper to build a styled gt table for any position
+# ------------------------------------------------------------------
+# Helper: build styled gt ranking table
+# ------------------------------------------------------------------
 build_rankings_gt <- function(final_df, pos) {
   pct_cols <- paste0(tolower(pos), c("1_pct", "2_pct", "3_pct"))
   labels <- c(
@@ -260,11 +86,16 @@ build_rankings_gt <- function(final_df, pos) {
     ) |>
     cols_align(align = "center", columns = everything()) |>
     tab_header(
-      title = md(paste0("**2025 Fantasy Football PPR Points Per Game Rankings**")),
-      subtitle = paste0("Top 24 ", ifelse(pos == "WR", "Receivers", 
-                                          ifelse(pos == "TE", "Tight Ends",
-                                                 ifelse(pos == "QB", "Quarterbacks", "Running Backs"))),
-                        " (Min. 4 games played)")
+      title = md("**2025 Fantasy Football PPR Points Per Game Rankings**"),
+      subtitle = paste0(
+        "Top 24 ",
+        switch(pos,
+               "WR" = "Receivers",
+               "TE" = "Tight Ends",
+               "QB" = "Quarterbacks",
+               "Running Backs"),
+        " (Min. 4 games played)"
+      )
     ) |>
     tab_style(
       style = cell_text(weight = "bold"),
@@ -295,17 +126,16 @@ build_rankings_gt <- function(final_df, pos) {
            <div style='font-size: 12px;'>
              <b>Data:</b> nflfastR | <b>Created by:</b> @FantasySPack & @jakemammen
            </div>",
-          local_image(
-            filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-            height = 30
-          ),
+          local_image(filename = "logos/Graph_logo2.png", height = 30),
           "</div>"
         )
       )
     )
 }
 
-# --- 2. USER INTERFACE (UI) ---
+# ------------------------------------------------------------------
+# 2. USER INTERFACE
+# ------------------------------------------------------------------
 ui <- fluidPage(
   theme = bs_theme(
     version = 5,
@@ -356,7 +186,8 @@ ui <- fluidPage(
           input_dark_mode()
       ),
       hr(),
-      # Player controls shown only on the performance tab
+      
+      # Controls for Player Performance tab
       conditionalPanel(
         condition = "input.main_tabs == 'Player Performance'",
         p("Select a position and player name below to analyze their PPR performance thresholds against their specific position group."),
@@ -381,7 +212,8 @@ ui <- fluidPage(
         p(HTML("<b>Legend note:</b> The threshold categories adjust automatically based on whether the selected player is a QB, RB, WR, or TE.")),
         br()
       ),
-      # Rankings controls shown only on the rankings tab
+      
+      # Controls for Position Rankings tab
       conditionalPanel(
         condition = "input.main_tabs == 'Position Rankings'",
         p("Select a position to view the top-24 PPR-per-game rankings with weekly tier percentages."),
@@ -394,8 +226,10 @@ ui <- fluidPage(
         ),
         hr()
       ),
+      
       p(HTML("<b>Data:</b> nflfastR"))
     ),
+    
     mainPanel(
       tabsetPanel(
         id = "main_tabs",
@@ -412,7 +246,9 @@ ui <- fluidPage(
   )
 )
 
-# --- 3. SERVER LOGIC ---
+# ------------------------------------------------------------------
+# 3. SERVER LOGIC
+# ------------------------------------------------------------------
 server <- function(input, output, session) {
   
   observeEvent(input$position_filter, {
@@ -436,18 +272,21 @@ server <- function(input, output, session) {
   
   plot_generator <- reactive({
     req(input$player_name)
+    
     player_info <- raw_stats |>
       filter(player_display_name == input$player_name) |>
       slice(1)
+    
     if (nrow(player_info) == 0) return(NULL)
     
     current_position <- player_info$position
-    current_team <- player_info$team
+    current_team     <- player_info$team
     
     player_colors <- team_colors_db |>
       filter(team_abbr == current_team) |>
       slice(1)
-    primary_color <- if (nrow(player_colors) > 0) player_colors$team_color else "#112233"
+    
+    primary_color   <- if (nrow(player_colors) > 0) player_colors$team_color  else "#112233"
     secondary_color <- if (nrow(player_colors) > 0) player_colors$team_color2 else "#636363"
     
     weekly_thresholds <- raw_stats |>
@@ -487,7 +326,7 @@ server <- function(input, output, session) {
       mutate(category = factor(category, levels = c(tier1_label, tier2_label, tier3_label)))
     
     n_active <- nrow(player_stats)
-    avg_ppr <- round(mean(player_stats$ppr, na.rm = TRUE), 1)
+    avg_ppr  <- round(mean(player_stats$ppr, na.rm = TRUE), 1)
     
     counts <- player_stats |>
       count(category, .drop = FALSE) |>
@@ -495,9 +334,9 @@ server <- function(input, output, session) {
     labs_fill <- paste(levels(player_stats$category), " (", counts$pct, "%)", sep = "")
     
     team_schedule <- raw_schedules |>
-      filter((home_team == current_team | away_team == current_team))
-    n_games <- nrow(team_schedule)
-    n_inactive <- max(0, n_games - n_active)
+      filter(home_team == current_team | away_team == current_team)
+    n_games     <- nrow(team_schedule)
+    n_inactive  <- max(0, n_games - n_active)
     pct_inactive <- round(n_inactive / max(1, n_games) * 100)
     
     player_stats <- player_stats |>
@@ -507,7 +346,7 @@ server <- function(input, output, session) {
     t12_name <- paste0("Weekly ", current_position, "12")
     t24_name <- paste0("Weekly ", current_position, "24")
     
-    p <- ggplot(player_stats, aes(x = factor(week), y = ppr)) +
+    ggplot(player_stats, aes(x = factor(week), y = ppr)) +
       geom_col(aes(fill = category), width = 0.7) +
       geom_text(aes(label = sprintf("%.1f", ppr)), vjust = -0.5, size = 3) +
       geom_line(aes(y = PosRank12, group = 1, linetype = t12_name), color = "gray50", linewidth = 0.8) +
@@ -532,7 +371,7 @@ server <- function(input, output, session) {
         ),
         y = "PPR Fantasy Points",
         x = "Opponent / Game Week",
-        caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+        caption = "logos/Graph_logo2.png",
         tag = paste0(
           "<span style='color:", primary_color,
           "; font-weight:900; font-size:20px; font-family:Oswald;'>",
@@ -547,12 +386,11 @@ server <- function(input, output, session) {
         legend.text = element_text(size = 9),
         plot.title = element_text(size = 14, face = "bold"),
         plot.subtitle = ggtext::element_markdown(size = 12),
-        plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
+        plot.background = element_rect(fill = "#F0F0F0"),
+        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),  # enable if ggpath is loaded
         plot.tag = ggtext::element_markdown(vjust = 1, hjust = 1),
         plot.tag.position = c(0.98, 0.98)
       )
-    return(p)
   })
   
   output$player_plot <- renderPlot({
@@ -573,7 +411,6 @@ server <- function(input, output, session) {
     }
   )
   
-  # Rankings table output
   output$rankings_table <- render_gt({
     req(input$rank_position)
     pos <- input$rank_position
@@ -581,11 +418,12 @@ server <- function(input, output, session) {
                        "RB" = rb_final_stats,
                        "WR" = wr_final_stats,
                        "TE" = te_final_stats,
-                       "QB" = qb_final_stats
-    )
+                       "QB" = qb_final_stats)
     build_rankings_gt(final_df, pos)
   })
 }
 
-# --- 4. LAUNCH THE APPLICATION ---
+# ------------------------------------------------------------------
+# 4. LAUNCH
+# ------------------------------------------------------------------
 shinyApp(ui = ui, server = server)
