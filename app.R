@@ -1,5 +1,6 @@
 # app.R
-# Fantasy Sports Pack Player Performance Tool – production-ready for Posit Connect
+# Fantasy Sports Pack Player Performance Tool – with Team Filter + Two-Player Comparison
+# Production-ready for Posit Connect
 
 library(shiny)
 library(dplyr)
@@ -10,10 +11,10 @@ library(bslib)
 library(thematic)
 library(gt)
 library(htmltools)
-# library(ggpath)   # uncomment if ggpath is required for element_path
+library(ggpath)  # uncomment if you use element_path for the logo
 
 # ------------------------------------------------------------------
-# 1. LOAD PRE-SAVED DATA (no network calls)
+# 1. LOAD PRE-SAVED DATA
 # ------------------------------------------------------------------
 all_stats        <- readRDS("data/all_stats.rds")
 raw_schedules    <- readRDS("data/raw_schedules.rds")
@@ -23,25 +24,22 @@ wr_final_stats   <- readRDS("data/wr_final_stats.rds")
 te_final_stats   <- readRDS("data/te_final_stats.rds")
 qb_final_stats   <- readRDS("data/qb_final_stats.rds")
 
-# Derive the stricter filter used by the interactive plot
+# Stricter filter used by the interactive plot
 raw_stats <- all_stats |>
   group_by(player_id, player_display_name, team) |>
   mutate(active_games = n()) |>
   ungroup() |>
   filter(active_games >= 7)
 
-player_choices <- raw_stats |>
-  distinct(player_display_name) |>
-  pull(player_display_name) |>
-  sort()
+# Pre-compute choices
+team_choices <- c("All", sort(unique(raw_stats$team)))
 
-# Team colour helper (used by both plot and tables)
 team_info <- team_colors_db |>
   select(team_abbr, team_color) |>
   mutate(team_abbr = ifelse(team_abbr == "WSH", "WAS", team_abbr))
 
 # ------------------------------------------------------------------
-# Helper: build styled gt ranking table
+# Helper: build styled gt ranking table (unchanged)
 # ------------------------------------------------------------------
 build_rankings_gt <- function(final_df, pos) {
   pct_cols <- paste0(tolower(pos), c("1_pct", "2_pct", "3_pct"))
@@ -67,10 +65,7 @@ build_rankings_gt <- function(final_df, pos) {
       style = cell_text(weight = "bold"),
       locations = cells_column_labels(columns = everything())
     ) |>
-    fmt_number(
-      columns = c(ppr_per_game, all_of(pct_cols)),
-      decimals = 1
-    ) |>
+    fmt_number(columns = c(ppr_per_game, all_of(pct_cols)), decimals = 1) |>
     fmt_markdown(columns = team) |>
     tab_style(
       style = cell_fill(color = "#31a354"),
@@ -89,22 +84,12 @@ build_rankings_gt <- function(final_df, pos) {
       title = md("**2025 Fantasy Football PPR Points Per Game Rankings**"),
       subtitle = paste0(
         "Top 24 ",
-        switch(pos,
-               "WR" = "Receivers",
-               "TE" = "Tight Ends",
-               "QB" = "Quarterbacks",
-               "Running Backs"),
+        switch(pos, "WR" = "Receivers", "TE" = "Tight Ends", "QB" = "Quarterbacks", "Running Backs"),
         " (Min. 4 games played)"
       )
     ) |>
-    tab_style(
-      style = cell_text(weight = "bold"),
-      locations = cells_title(groups = "title")
-    ) |>
-    tab_style(
-      style = cell_text(style = "italic"),
-      locations = cells_title(groups = "subtitle")
-    ) |>
+    tab_style(style = cell_text(weight = "bold"), locations = cells_title(groups = "title")) |>
+    tab_style(style = cell_text(style = "italic"), locations = cells_title(groups = "subtitle")) |>
     opt_table_font(font = "Arial") |>
     tab_options(
       table.font.color = "black",
@@ -187,11 +172,23 @@ ui <- fluidPage(
       ),
       hr(),
       
-      # Controls for Player Performance tab
+      # ---------------- Player Performance controls ----------------
       conditionalPanel(
         condition = "input.main_tabs == 'Player Performance'",
-        p("Select a position and player name below to analyze their PPR performance thresholds against their specific position group."),
+        
+        p("Select filters and player(s) to analyze weekly PPR performance against position thresholds."),
         hr(),
+        
+        # Team filter
+        selectInput(
+          inputId = "team_filter",
+          label = "Filter by Team:",
+          choices = team_choices,
+          selected = "All"
+        ),
+        br(),
+        
+        # Position filter
         selectInput(
           inputId = "position_filter",
           label = "Filter by Position:",
@@ -199,21 +196,45 @@ ui <- fluidPage(
           selected = "All"
         ),
         br(),
+        
+        # Compare mode
+        checkboxInput(
+          inputId = "compare_mode",
+          label = "Compare two players",
+          value = FALSE
+        ),
+        br(),
+        
+        # Player 1
         selectizeInput(
           inputId = "player_name",
-          label = "Search Player Name:",
+          label = "Player 1:",
           choices = NULL,
           selected = "",
-          options = list(placeholder = "Type to search a player...", maxOptions = 500)
+          options = list(placeholder = "Type to search...", maxOptions = 500)
         ),
+        
+        # Player 2 (only when compare mode is on)
+        conditionalPanel(
+          condition = "input.compare_mode == true",
+          br(),
+          selectizeInput(
+            inputId = "player_name2",
+            label = "Player 2 (same position recommended):",
+            choices = NULL,
+            selected = "",
+            options = list(placeholder = "Type to search...", maxOptions = 500)
+          )
+        ),
+        
         br(),
         downloadButton(outputId = "download_plot", label = "Download Plot as PNG", class = "btn-success"),
         hr(),
-        p(HTML("<b>Legend note:</b> The threshold categories adjust automatically based on whether the selected player is a QB, RB, WR, or TE.")),
+        p(HTML("<b>Note:</b> When comparing two players, the second player list is limited to the same position as Player 1 so that the weekly threshold lines remain meaningful.")),
         br()
       ),
       
-      # Controls for Position Rankings tab
+      # ---------------- Rankings controls ----------------
       conditionalPanel(
         condition = "input.main_tabs == 'Position Rankings'",
         p("Select a position to view the top-24 PPR-per-game rankings with weekly tier percentages."),
@@ -233,14 +254,8 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(
         id = "main_tabs",
-        tabPanel(
-          "Player Performance",
-          plotOutput(outputId = "player_plot", height = "550px")
-        ),
-        tabPanel(
-          "Position Rankings",
-          gt_output("rankings_table")
-        )
+        tabPanel("Player Performance", plotOutput(outputId = "player_plot", height = "600px")),
+        tabPanel("Position Rankings", gt_output("rankings_table"))
       )
     )
   )
@@ -251,44 +266,210 @@ ui <- fluidPage(
 # ------------------------------------------------------------------
 server <- function(input, output, session) {
   
-  observeEvent(input$position_filter, {
-    filtered_stats <- raw_stats
-    if (input$position_filter != "All") {
-      filtered_stats <- filtered_stats |> filter(position == input$position_filter)
+  # ----- Reactive: available players based on Team + Position -----
+  available_players <- reactive({
+    df <- raw_stats
+    if (!is.null(input$team_filter) && input$team_filter != "All") {
+      df <- df |> filter(team == input$team_filter)
     }
-    updated_choices <- filtered_stats |>
-      distinct(player_display_name) |>
-      pull(player_display_name) |>
-      sort()
-    current_selection <- input$player_name
-    updateSelectizeInput(
-      session,
-      inputId = "player_name",
-      choices = updated_choices,
-      server = TRUE,
-      selected = if (current_selection %in% updated_choices) current_selection else ""
-    )
+    if (!is.null(input$position_filter) && input$position_filter != "All") {
+      df <- df |> filter(position == input$position_filter)
+    }
+    df |> distinct(player_display_name) |> pull(player_display_name) |> sort()
   })
   
+  # Update Player 1 choices only when team or position changes
+  observeEvent(
+    list(input$team_filter, input$position_filter),
+    {
+      choices <- available_players()
+      current <- isolate(input$player_name)
+      updateSelectizeInput(
+        session,
+        inputId = "player_name",
+        choices = choices,
+        selected = if (!is.null(current) && current %in% choices) current else "",
+        server = TRUE
+      )
+    },
+    ignoreInit = FALSE
+  )
+  
+  # Update Player 2 choices only when relevant inputs change
+  observeEvent(
+    list(input$compare_mode, input$player_name, input$team_filter, input$position_filter),
+    {
+      if (!isTRUE(input$compare_mode)) return()
+      
+      df <- raw_stats
+      
+      # Apply team filter
+      if (!is.null(input$team_filter) && input$team_filter != "All") {
+        df <- df |> filter(team == input$team_filter)
+      }
+      
+      # Restrict to same position as Player 1 (preferred)
+      if (!is.null(input$player_name) && input$player_name != "") {
+        pos1 <- raw_stats |>
+          filter(player_display_name == input$player_name) |>
+          slice(1) |>
+          pull(position)
+        if (length(pos1) == 1 && !is.na(pos1)) {
+          df <- df |> filter(position == pos1)
+        }
+      } else if (!is.null(input$position_filter) && input$position_filter != "All") {
+        df <- df |> filter(position == input$position_filter)
+      }
+      
+      choices <- df |>
+        distinct(player_display_name) |>
+        pull(player_display_name) |>
+        sort()
+      
+      # Never allow comparing a player to himself
+      choices <- setdiff(choices, input$player_name)
+      
+      current2 <- isolate(input$player_name2)
+      updateSelectizeInput(
+        session,
+        inputId = "player_name2",
+        choices = choices,
+        selected = if (!is.null(current2) && current2 %in% choices) current2 else "",
+        server = TRUE
+      )
+    },
+    ignoreInit = TRUE
+  )
+  
   plot_generator <- reactive({
+    # Basic requirements
     req(input$player_name)
+    req(input$player_name != "")
     
-    player_info <- raw_stats |>
-      filter(player_display_name == input$player_name) |>
-      slice(1)
+    # ---------- SINGLE PLAYER ----------
+    if (!isTRUE(input$compare_mode) || is.null(input$player_name2) || input$player_name2 == "") {
+      
+      player_info <- raw_stats |> filter(player_display_name == input$player_name) |> slice(1)
+      if (nrow(player_info) == 0) return(NULL)
+      
+      current_position <- player_info$position
+      current_team     <- player_info$team
+      
+      player_colors <- team_colors_db |> filter(team_abbr == current_team) |> slice(1)
+      primary_color <- if (nrow(player_colors) > 0) player_colors$team_color else "#112233"
+      
+      weekly_thresholds <- raw_stats |>
+        filter(position == current_position) |>
+        group_by(week) |>
+        arrange(desc(fantasy_points_ppr)) |>
+        mutate(rank = row_number()) |>
+        filter(rank %in% c(12, 24)) |>
+        select(week, rank, fantasy_points_ppr) |>
+        tidyr::pivot_wider(names_from = rank, values_from = fantasy_points_ppr, names_prefix = "PosRank") |>
+        arrange(week)
+      
+      player_stats <- raw_stats |>
+        filter(player_display_name == input$player_name) |>
+        select(week, opponent_team, ppr = fantasy_points_ppr) |>
+        arrange(week)
+      
+      player_ranks <- raw_stats |>
+        filter(position == current_position) |>
+        group_by(week) |>
+        arrange(desc(fantasy_points_ppr)) |>
+        mutate(rank = row_number()) |>
+        filter(player_display_name == input$player_name) |>
+        select(week, rank)
+      
+      tier1_label <- paste0(current_position, "1")
+      tier2_label <- paste0(current_position, "2")
+      tier3_label <- paste0(current_position, "3+")
+      
+      player_stats <- player_stats |>
+        left_join(player_ranks, by = "week") |>
+        mutate(category = case_when(
+          rank <= 12 ~ tier1_label,
+          rank <= 24 ~ tier2_label,
+          TRUE ~ tier3_label
+        )) |>
+        mutate(category = factor(category, levels = c(tier1_label, tier2_label, tier3_label)))
+      
+      n_active <- nrow(player_stats)
+      avg_ppr  <- round(mean(player_stats$ppr, na.rm = TRUE), 1)
+      
+      counts <- player_stats |> count(category, .drop = FALSE) |> mutate(pct = round(n / n_active * 100))
+      labs_fill <- sprintf("%s (%s%%)", levels(player_stats$category), counts$pct)
+      
+      team_schedule <- raw_schedules |> filter(home_team == current_team | away_team == current_team)
+      n_games      <- nrow(team_schedule)
+      n_inactive   <- max(0, n_games - n_active)
+      pct_inactive <- round(n_inactive / max(1, n_games) * 100)
+      
+      player_stats <- player_stats |> left_join(weekly_thresholds, by = "week")
+      x_labels <- paste(player_stats$opponent_team, player_stats$week, sep = "\n")
+      t12_name <- paste0("Weekly ", current_position, "12")
+      t24_name <- paste0("Weekly ", current_position, "24")
+      
+      p <- ggplot(player_stats, aes(x = factor(week), y = ppr)) +
+        geom_col(aes(fill = category), width = 0.7) +
+        geom_text(aes(label = sprintf("%.1f", ppr)), vjust = -0.5, size = 3) +
+        geom_line(aes(y = PosRank12, group = 1, linetype = t12_name), color = "gray50", linewidth = 0.8) +
+        geom_line(aes(y = PosRank24, group = 1, linetype = t24_name), color = "red", linewidth = 0.8) +
+        scale_fill_manual(values = c("#31a354", "#636363", "#e41a1c"), labels = labs_fill,
+                          name = paste0("Performance\nInactive: ", pct_inactive, "%")) +
+        scale_linetype_manual(values = c("solid", "dashed"), name = NULL) +
+        scale_x_discrete(labels = x_labels) +
+        scale_y_continuous(limits = c(0, max(c(player_stats$ppr, player_stats$PosRank12), na.rm = TRUE) * 1.2),
+                           breaks = seq(0, 60, 5)) +
+        labs(
+          title = paste0(input$player_name, ": Week 1–18, 2025"),
+          subtitle = paste0("<b>", n_active, " Active Games</b>: ", avg_ppr, " PPR/Game | <b>Position</b>: ", current_position),
+          y = "PPR Fantasy Points", x = "Opponent / Week",
+          caption = "logos/Graph_logo2.png",
+          tag = paste0("<span style='color:", primary_color, "; font-weight:900; font-size:18px; font-family:Oswald;'>", current_team, "</span>")
+        ) +
+        theme_minimal() +
+        theme(
+          axis.text.x = element_text(angle = 0, vjust = 0.5, size = 8),
+          legend.position = "bottom",
+          plot.title = element_text(size = 14, face = "bold"),
+          plot.subtitle = ggtext::element_markdown(size = 11),
+          plot.background = element_rect(fill = "#F0F0F0"),
+          plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
+          plot.tag = ggtext::element_markdown(vjust = 1, hjust = 1),
+          plot.tag.position = c(0.98, 0.98),
+          legend.text = element_text(family = "sans", size = 9),
+          legend.title = element_text(family = "sans", size = 10),
+        )
+      return(p)
+    }
     
-    if (nrow(player_info) == 0) return(NULL)
+    # ---------- TWO-PLAYER COMPARISON ----------
+    req(input$player_name2)
+    req(input$player_name2 != "")
+    req(input$player_name != input$player_name2)   # extra safety
     
-    current_position <- player_info$position
-    current_team     <- player_info$team
+    p1_info <- raw_stats |> filter(player_display_name == input$player_name)  |> slice(1)
+    p2_info <- raw_stats |> filter(player_display_name == input$player_name2) |> slice(1)
     
-    player_colors <- team_colors_db |>
-      filter(team_abbr == current_team) |>
-      slice(1)
+    if (nrow(p1_info) == 0 || nrow(p2_info) == 0) return(NULL)
     
-    primary_color   <- if (nrow(player_colors) > 0) player_colors$team_color  else "#112233"
-    secondary_color <- if (nrow(player_colors) > 0) player_colors$team_color2 else "#636363"
+    pos1 <- p1_info$position
+    pos2 <- p2_info$position
     
+    # Warn if positions differ
+    if (pos1 != pos2) {
+      return(
+        ggplot() +
+          labs(title = "Position mismatch",
+               subtitle = "Please select two players from the same position for a meaningful comparison.") +
+          theme_void()
+      )
+    }
+    
+    current_position <- pos1
+    
+    # Weekly thresholds for the shared position
     weekly_thresholds <- raw_stats |>
       filter(position == current_position) |>
       group_by(week) |>
@@ -299,118 +480,89 @@ server <- function(input, output, session) {
       tidyr::pivot_wider(names_from = rank, values_from = fantasy_points_ppr, names_prefix = "PosRank") |>
       arrange(week)
     
-    player_stats <- raw_stats |>
+    # Player 1 data
+    p1_stats <- raw_stats |>
       filter(player_display_name == input$player_name) |>
       select(week, opponent_team, ppr = fantasy_points_ppr) |>
+      mutate(player = input$player_name) |>
       arrange(week)
     
-    player_ranks <- raw_stats |>
-      filter(position == current_position) |>
-      group_by(week) |>
-      arrange(desc(fantasy_points_ppr)) |>
-      mutate(rank = row_number()) |>
-      filter(player_display_name == input$player_name) |>
-      select(week, rank)
+    # Player 2 data
+    p2_stats <- raw_stats |>
+      filter(player_display_name == input$player_name2) |>
+      select(week, opponent_team, ppr = fantasy_points_ppr) |>
+      mutate(player = input$player_name2) |>
+      arrange(week)
     
-    tier1_label <- paste0(current_position, "1")
-    tier2_label <- paste0(current_position, "2")
-    tier3_label <- paste0(current_position, "3+")
-    
-    player_stats <- player_stats |>
-      left_join(player_ranks, by = "week") |>
-      mutate(category = case_when(
-        rank <= 12 ~ tier1_label,
-        rank <= 24 ~ tier2_label,
-        TRUE ~ tier3_label
-      )) |>
-      mutate(category = factor(category, levels = c(tier1_label, tier2_label, tier3_label)))
-    
-    n_active <- nrow(player_stats)
-    avg_ppr  <- round(mean(player_stats$ppr, na.rm = TRUE), 1)
-    
-    counts <- player_stats |>
-      count(category, .drop = FALSE) |>
-      mutate(pct = round(n / n_active * 100))
-    labs_fill <- paste(levels(player_stats$category), " (", counts$pct, "%)", sep = "")
-    
-    team_schedule <- raw_schedules |>
-      filter(home_team == current_team | away_team == current_team)
-    n_games     <- nrow(team_schedule)
-    n_inactive  <- max(0, n_games - n_active)
-    pct_inactive <- round(n_inactive / max(1, n_games) * 100)
-    
-    player_stats <- player_stats |>
+    combined <- bind_rows(p1_stats, p2_stats) |>
       left_join(weekly_thresholds, by = "week")
     
-    x_labels <- paste(player_stats$opponent_team, player_stats$week, sep = "\n")
+    # Average lines for subtitle
+    avg1 <- round(mean(p1_stats$ppr, na.rm = TRUE), 1)
+    avg2 <- round(mean(p2_stats$ppr, na.rm = TRUE), 1)
+    
     t12_name <- paste0("Weekly ", current_position, "12")
     t24_name <- paste0("Weekly ", current_position, "24")
     
-    ggplot(player_stats, aes(x = factor(week), y = ppr)) +
-      geom_col(aes(fill = category), width = 0.7) +
-      geom_text(aes(label = sprintf("%.1f", ppr)), vjust = -0.5, size = 3) +
-      geom_line(aes(y = PosRank12, group = 1, linetype = t12_name), color = "gray50", linewidth = 0.8) +
+    p <- ggplot(combined, aes(x = factor(week), y = ppr, fill = player)) +
+      geom_col(position = position_dodge(width = 0.75), width = 0.7, alpha = 0.9) +
+      geom_text(aes(label = sprintf("%.1f", ppr)),
+                position = position_dodge(width = 0.75), vjust = -0.4, size = 2.7) +
+      geom_line(aes(y = PosRank12, group = 1, linetype = t12_name), color = "gray40", linewidth = 0.8) +
       geom_line(aes(y = PosRank24, group = 1, linetype = t24_name), color = "red", linewidth = 0.8) +
-      scale_fill_manual(
-        values = c("#31a354", "#636363", "#e41a1c"),
-        labels = labs_fill,
-        name = paste0("Performance\nInactive: ", pct_inactive, "%")
-      ) +
+      scale_fill_manual(values = c("#1f77b4", "#ff7f0e"), name = "Player") +
       scale_linetype_manual(values = c("solid", "dashed"), name = NULL) +
-      scale_x_discrete(labels = x_labels) +
-      scale_y_continuous(
-        limits = c(0, max(c(player_stats$ppr, player_stats$PosRank12), na.rm = TRUE) * 1.2),
-        breaks = seq(0, 60, 5)
-      ) +
+      scale_y_continuous(limits = c(0, max(combined$ppr, combined$PosRank12, na.rm = TRUE) * 1.25),
+                         breaks = seq(0, 60, 5)) +
       labs(
-        title = paste0(input$player_name, ": Week 1 Through Week 18, 2025"),
+        title = paste0(input$player_name, " vs ", input$player_name2, " (", current_position, ")"),
         subtitle = paste0(
-          "<b>", n_active, " Active Games</b>: ", avg_ppr,
-          " PPR/Game | <b>Position Group</b>: ", current_position,
-          " | <b>Data:</b> nflfastR"
+          "<b>", input$player_name, "</b>: ", avg1, " PPR/G &nbsp;&nbsp;|&nbsp;&nbsp; <b>",
+          input$player_name2, "</b>: ", avg2, " PPR/G"
         ),
-        y = "PPR Fantasy Points",
-        x = "Opponent / Game Week",
-        caption = "logos/Graph_logo2.png",
-        tag = paste0(
-          "<span style='color:", primary_color,
-          "; font-weight:900; font-size:20px; font-family:Oswald;'>",
-          current_team, "</span>"
-        )
+        y = "PPR Fantasy Points", x = "Week",
+        caption = "logos/Graph_logo2.png"
       ) +
       theme_minimal() +
       theme(
-        axis.text.x = element_text(angle = 0, vjust = 0.5, size = 9),
+        axis.text.x = element_text(size = 9),
         legend.position = "bottom",
-        legend.title = element_text(size = 10),
-        legend.text = element_text(size = 9),
         plot.title = element_text(size = 14, face = "bold"),
         plot.subtitle = ggtext::element_markdown(size = 12),
         plot.background = element_rect(fill = "#F0F0F0"),
-        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),  # enable if ggpath is loaded
-        plot.tag = ggtext::element_markdown(vjust = 1, hjust = 1),
-        plot.tag.position = c(0.98, 0.98)
+        plot.caption = ggpath::element_path(hjust = 1, size = 1.0),
+        legend.text = element_text(family = "sans", size = 9),
+        legend.title = element_text(family = "sans", size = 10),
       )
+    return(p)
   })
   
+  # Render plot
   output$player_plot <- renderPlot({
     p <- plot_generator()
     if (is.null(p)) {
-      ggplot() + labs(title = "Please verify player search criteria.") + theme_void()
+      ggplot() + labs(title = "Select at least one player.") + theme_void()
     } else {
       p
     }
   })
   
+  # Download
   output$download_plot <- downloadHandler(
     filename = function() {
-      paste0(gsub(" ", "_", tolower(input$player_name)), "_fantasy_performance_2025.png")
+      if (isTRUE(input$compare_mode) && !is.null(input$player_name2) && input$player_name2 != "") {
+        paste0(gsub(" ", "_", tolower(input$player_name)), "_vs_",
+               gsub(" ", "_", tolower(input$player_name2)), "_2025.png")
+      } else {
+        paste0(gsub(" ", "_", tolower(input$player_name)), "_fantasy_performance_2025.png")
+      }
     },
     content = function(file) {
-      ggsave(file, plot = plot_generator(), device = "png", width = 11, height = 7, dpi = 300)
+      ggsave(file, plot = plot_generator(), device = "png", width = 12, height = 7, dpi = 300)
     }
   )
   
+  # Rankings table (unchanged)
   output$rankings_table <- render_gt({
     req(input$rank_position)
     pos <- input$rank_position
