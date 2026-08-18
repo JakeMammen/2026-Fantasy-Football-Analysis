@@ -97,7 +97,7 @@ ggplot(data = sim_df, aes(x = sim_tot, group = game_id, color = game_id, fill = 
   scale_fill_manual(values = c("#ff7f00", "#9932cc", "red", "blue", "deeppink", "darkorange",
                                "aquamarine", "azure", "bisque", "brown", "blueviolet", "cadetblue",
                                "cyan3", "darksalmon", "deepskyblue", "darkred", "darkgreen")) +
-  labs(title = "Ladd McConkey Expected PPR Fantasy Point Distribution",
+  labs(title = "Michael Wilson Expected PPR Fantasy Point Distribution",
        subtitle = "Based on 10,000 Simulations",
        y = "Density",
        x = "Expected PPR Fantasy Points",
