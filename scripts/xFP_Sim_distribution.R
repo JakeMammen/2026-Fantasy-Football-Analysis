@@ -7,11 +7,11 @@ library(ggthemes)
 library(tidyverse)
 library(progress)
 
-pbp <- load_pbp(2025) |>
-  filter(week >= 1 & week <= 18)
+pbp <- load_pbp(2026) |>
+  filter(week >= 1)
 
 fant_pt_dist_df <- pbp %>% 
-  filter(pass_attempt==1 & season_type=='REG' & two_point_attempt==0 & !is.na(receiver_id) & receiver == 'M.Wilson' & week <= 18) %>% 
+  filter(pass_attempt==1 & season_type=='REG' & two_point_attempt==0 & !is.na(receiver_id) & receiver == 'C.Watson' & week <= 18) %>% 
   select(season = season, week, game_id, play_id, posteam = posteam, receiver, yardline_100 = yardline_100, air_yards = air_yards, actual_yards_gained = yards_gained, complete_pass, cp, yac_prob = xyac_success, gain = yards_gained) %>% 
   mutate(
     gain = ifelse(yardline_100==air_yards, yardline_100, gain),
@@ -97,7 +97,7 @@ ggplot(data = sim_df, aes(x = sim_tot, group = game_id, color = game_id, fill = 
   scale_fill_manual(values = c("#ff7f00", "#9932cc", "red", "blue", "deeppink", "darkorange",
                                "aquamarine", "azure", "bisque", "brown", "blueviolet", "cadetblue",
                                "cyan3", "darksalmon", "deepskyblue", "darkred", "darkgreen")) +
-  labs(title = "Michael Wilson Expected PPR Fantasy Point Distribution",
+  labs(title = "Christian Watson Expected PPR Fantasy Point Distribution",
        subtitle = "Based on 10,000 Simulations",
        y = "Density",
        x = "Expected PPR Fantasy Points",

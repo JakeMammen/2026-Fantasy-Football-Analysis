@@ -3,7 +3,7 @@ library(ggplot2)
 library(gt)
 library(nflreadr)
 
-pbp <- nflreadr::load_pbp(2025) |> 
+pbp <- nflreadr::load_pbp(2026) |> 
   dplyr::filter(season_type == "REG") |>
   dplyr::filter(!is.na(posteam) & (rush == 1 | pass == 1))
 
@@ -28,7 +28,7 @@ qbs <- pbp |>
     plays = dplyr::n(),
     qb_epa = mean(qb_epa, na.ram = TRUE)
   ) |>
-  dplyr::filter(plays > 200) |>
+  dplyr::filter(plays > 25) |>
   dplyr::slice_max(qb_epa, n = 10)
 
 epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
@@ -39,8 +39,8 @@ epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
     x = "Offense EPA/play",
     y = "Defense EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-    title = "2025 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Regular Season | Data: @nflfastR"
+    title = "2026 NFL Offensive and Defensive EPA per Play",
+    subtitle = "Week 1 | Data: @nflfastR"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -53,7 +53,7 @@ epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
   
 epa
 
-ggsave(filename = "output/graphs/2025_OffandDef_EPA.png",
+ggsave(filename = "output/graphs/2026_OffandDef_EPA.png",
        plot     = epa,
        width    = 10,
        height   = 6,
@@ -141,8 +141,8 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
   nflplotR::scale_color_nfl(type = "secondary") +
   nflplotR::scale_fill_nfl(alpha = 0.4) +
   ggplot2::labs(
-    title = "2025 NFL Quarterback EPA per Play Leaders",
-    subtitle = "Regular Season | Data: @nflfastR",
+    title = "2026 NFL Quarterback EPA per Play Leaders",
+    subtitle = "Week 1 | Data: @nflfastR",
     y = "EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
   ) +

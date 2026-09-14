@@ -6,7 +6,7 @@ library(scales)
 # ------------------------------------------------------------------
 # Data preparation
 # ------------------------------------------------------------------
-pbp_r <- load_pbp(2025)
+pbp_r <- load_pbp(2026)
 pbp_r_p <- pbp_r |>
   filter(
     play_type == "pass",
@@ -43,7 +43,7 @@ adot_tbl <- pbp_r_p |>
     ), na.rm = TRUE)
   ) |>
   filter(
-    n > 300,
+    n > 15,
     !is.na(passer),
     passer != "R.Wilson"
   ) |>
@@ -71,8 +71,8 @@ adot_tbl <- adot_tbl |>
 adot_tbl <- adot_tbl |>
   gt() |>
   tab_header(
-    title = md("**2025 Average Depth of Target (ADOT) – Qualified Quarterbacks**"),
-    subtitle = md("Regular season (Weeks 1–18) only | Minimum 300 pass attempts")
+    title = md("**2026 Average Depth of Target (ADOT) – Qualified Quarterbacks**"),
+    subtitle = md("Week 1 | Minimum 15 pass attempts")
   ) |>
   cols_move_to_start(columns = rank) |>
   cols_label(

@@ -3,10 +3,10 @@ library(dplyr)
 library(ggimage)
 library(nflfastR)
 
-pbp <- load_pbp(2025) |>
-  filter(week >= 1 & week <= 18)
+pbp <- load_pbp(2026) |>
+  filter(week >= 1)
 
-rosters <- load_rosters(2025) %>%
+rosters <- load_rosters(2026) %>%
   select(season, gsis_id, full_name, position, team) %>%
   distinct()
 
@@ -59,7 +59,7 @@ rb_touches <- rb_touches %>%
     total_touches = sum(touches),
     pct_touches = touches / total_touches
   ) %>%
-  filter(total_touches >= 100)
+  filter(total_touches >= 6 & rusher_full_name != "Al-Jay Henderson")
 
 rb_touches_2 <- rb_touches %>%
   filter(field_touch == "touch_20_1") %>%
@@ -147,7 +147,7 @@ rb_hvt <- left_join(rb_hvt,
                     teams_colors_logos,
                     by = c("posteam" = "team_abbr")
 ) %>%
-  filter(total_touches >= 100, hvt_type.x == "hvt_pct")
+  filter(total_touches >= 15, hvt_type.x == "hvt_pct")
 
 ggplot() +
   geom_col(
@@ -164,7 +164,7 @@ ggplot() +
   ) +
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1),
-    limits = c(0, 0.22),
+    limits = c(0, 0.50),
     expand = c(0, 0)
   ) +
   theme(
