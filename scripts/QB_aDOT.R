@@ -71,7 +71,7 @@ adot_tbl <- adot_tbl |>
 adot_tbl <- adot_tbl |>
   gt() |>
   tab_header(
-    title = md("**2026 Average Depth of Target (ADOT) – Qualified Quarterbacks**"),
+    title = md("**2026 Average Depth of Target (ADOT)**"),
     subtitle = md("Week 1 | Minimum 15 pass attempts")
   ) |>
   cols_move_to_start(columns = rank) |>
@@ -137,7 +137,7 @@ adot_tbl <- adot_tbl |>
            <b>Data:</b> nflreadr | <b>Created by:</b> @jakemammen
          </div>",
         local_image(
-          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_logo_ggplot.png",
           height = 30
         ),
         "</div>"

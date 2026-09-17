@@ -9,7 +9,7 @@ library(progress)
 library(scales)
 library(webshot2)
 
-# Load player stats for 2025 regular season
+# Load player stats for 2026 regular season
 pbp <- nflreadr::load_player_stats(seasons = 2026) %>%
   filter(season_type == "REG")
 
@@ -304,7 +304,8 @@ fp_WR2026 <- avg_fp_df %>%
   dplyr::slice(1:100) %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
-  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Receivers**')) %>%
+  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Receivers**'),
+             subtitle = md('Through Week 1')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -337,7 +338,7 @@ fp_WR2026 <- avg_fp_df %>%
   ) %>%
   data_color(
     columns = vars(forp),
-    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-7, 0, 18)),
+    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-11, 0, 18)),
     autocolor_text = FALSE
   ) %>%
   tab_options(
@@ -368,7 +369,7 @@ fp_WR2026 <- avg_fp_df %>%
            <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
-          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
           height = 30
         ),
         "</div>"
@@ -584,7 +585,8 @@ fp_TE2026 <- avg_fpTE_df %>%
   dplyr::slice(1:60) %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
-  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Tight Ends**')) %>%
+  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Tight Ends**'),
+             subtitle = 'Through Week 1') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -648,7 +650,7 @@ fp_TE2026 <- avg_fpTE_df %>%
            <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
-          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
           height = 30
         ),
         "</div>"
@@ -1002,7 +1004,8 @@ fp_RB2026 <- avg_fpRB_df %>%
   dplyr::slice(1:60) %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
-  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Running Backs**')) %>%
+  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Running Backs**'),
+             subtitle = 'Through Week 1') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -1067,7 +1070,7 @@ fp_RB2026 <- avg_fpRB_df %>%
            <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
-          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
           height = 30
         ),
         "</div>"
@@ -1276,7 +1279,8 @@ fp_QB2026 <- avg_fpQB_df %>%
   dplyr::slice(1:37) %>% # Adjust for typical number of starting QBs
   mutate(Rank = row_number()) %>%
   gt() %>%
-  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Quarterbacks**')) %>%
+  tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Quarterbacks**'),
+             subtitle = 'Through Week 1') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -1339,7 +1343,7 @@ fp_QB2026 <- avg_fpQB_df %>%
            <b>Data:</b> nflreadr | <b>Credit:</b> Anthony Reinhard, 2020, Open Source Football | <b>Created by:</b> @FantasySPack & @jakemammen
          </div>",
         local_image(
-          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+          filename = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
           height = 30
         ),
         "</div>"

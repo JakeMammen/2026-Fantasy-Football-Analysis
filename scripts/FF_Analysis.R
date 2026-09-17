@@ -32,13 +32,13 @@ qbs <- pbp |>
   dplyr::slice_max(qb_epa, n = 10)
 
 epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
-  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.4, -0.3, -0.1), alpha = .2) +
+  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.8, -0.8, by = -0.1), alpha = .2) +
   nflplotR::geom_mean_lines(aes(x0 = off_epa , y0 = def_epa)) +
   nflplotR::geom_nfl_logos(aes(team_abbr = team), width = 0.065, alpha = 0.7) +
   ggplot2::labs(
     x = "Offense EPA/play",
     y = "Defense EPA/play",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
     title = "2026 NFL Offensive and Defensive EPA per Play",
     subtitle = "Week 1 | Data: @nflfastR"
   ) +
@@ -144,7 +144,7 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
     title = "2026 NFL Quarterback EPA per Play Leaders",
     subtitle = "Week 1 | Data: @nflfastR",
     y = "EPA/play",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -158,7 +158,7 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
 
 qb_epa
 
-ggsave(filename = "output/graphs/2025_qb_epa.png",
+ggsave(filename = "output/graphs/2026_qb_epa.png",
        plot     = qb_epa,
        width    = 10,
        height   = 6,
