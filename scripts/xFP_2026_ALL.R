@@ -305,7 +305,7 @@ fp_WR2026 <- avg_fp_df %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Receivers**'),
-             subtitle = md('Through Week 1')) %>%
+             subtitle = md('Through Week 2')) %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -333,12 +333,12 @@ fp_WR2026 <- avg_fp_df %>%
   tab_spanner(label = md('**Expected**'), columns = vars(rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
     columns = vars(PPR_pts, total_expected_points),
-    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 34)),
+    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 70)),
     autocolor_text = FALSE
   ) %>%
   data_color(
     columns = vars(forp),
-    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-11, 0, 18)),
+    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-17, 0, 30)),
     autocolor_text = FALSE
   ) %>%
   tab_options(
@@ -586,7 +586,7 @@ fp_TE2026 <- avg_fpTE_df %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Tight Ends**'),
-             subtitle = 'Through Week 1') %>%
+             subtitle = 'Through Week 2') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -614,12 +614,12 @@ fp_TE2026 <- avg_fpTE_df %>%
   tab_spanner(label = md('**Expected**'), columns = vars(rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
     columns = vars(PPR_pts, total_expected_points),
-    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 28)),
+    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 43)),
     autocolor_text = FALSE
   ) %>%
   data_color(
     columns = vars(forp),
-    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-9, 0, 15)),
+    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-6, 0, 15)),
     autocolor_text = FALSE
   ) %>%
   tab_options(
@@ -664,115 +664,6 @@ gtsave(fp_TE2026,
        filename = "output/tables/exp_fp_TE2026.png")
 
 ###################################################################################################################################################
-
-#############################################
-# 2025 NFL WRs: Actual vs Expected Touchdowns
-#############################################
-library(nflfastR)
-library(ggimage)
-library(ggrepel)
-library(stringr)
-library(ggtext)
-
-# Load play-by-play data
-pbp <- load_pbp(2026) |>
-  filter(week >= 1)
-
-avg_exp_fpWR_df <- avg_fp_df %>%
-  mutate(
-    fp_game = PPR_pts / games,
-    # Extract clean abbreviation whether team is plain text or HTML
-    team_clean = if_else(
-      str_detect(team, "<span"),
-      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
-      team
-    )
-  ) %>%
-  filter(games >= 1 & fp_game >= 5) %>%
-  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
-
-wr_actvsexp_TD <- ggplot(avg_exp_fpWR_df, aes(x = td, y = tds_exp)) +
-  geom_point(aes(color = team_color), size = 3.5) +
-  scale_color_identity() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
-  geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
-  labs(
-    title = "2026 NFL Wide Receivers: Actual vs. Expected Touchdowns",
-    x = "Actual Touchdowns",
-    y = "Expected Touchdowns",
-    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 5 Fpts per game",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
-  ) +
-  geom_label(x = 5, y = 12, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  geom_label(x = 12, y = 4, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  theme_minimal() +
-  theme(
-    plot.title = ggplot2::element_text(face = "bold"),
-    plot.title.position = "plot",
-    plot.subtitle = ggtext::element_markdown(),
-    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-    plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
-  )
-
-wr_actvsexp_TD
-
-ggsave(wr_actvsexp_TD,
-       filename = "output/graphs/wr_actvsexp_TD.png",
-       width    = 12,
-       height   = 8,
-       dpi      = 300,
-       units    = "in")
-
-#############################################
-# 2025 NFL TEs: Actual vs Expected Touchdowns
-#############################################
-
-avg_exp_fpTE_df <- avg_fpTE_df %>%
-  mutate(
-    fp_game = PPR_pts / games,
-    # Extract clean abbreviation whether team is plain text or HTML
-    team_clean = if_else(
-      str_detect(team, "<span"),
-      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
-      team
-    )
-  ) %>%
-  filter(games >= 8 & fp_game >= 7) %>%
-  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
-
-te_actvsexp_TD <- ggplot(avg_exp_fpTE_df, aes(x = td, y = tds_exp)) +
-  geom_point(aes(color = team_color), size = 3.5) +
-  scale_color_identity() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
-  geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
-  labs(
-    title = "2025 NFL Tight Ends: Actual vs. Expected Touchdowns",
-    x = "Actual Touchdowns",
-    y = "Expected Touchdowns",
-    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 8 games & 7 Fpts per game",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
-  ) +
-  geom_label(x = 2, y = 7.5, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  geom_label(x = 8, y = 1, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  theme_minimal() +
-  theme(
-    plot.title = ggplot2::element_text(face = "bold"),
-    plot.title.position = "plot",
-    plot.subtitle = ggtext::element_markdown(),
-    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-    plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
-  )
-
-te_actvsexp_TD
-
-ggsave(te_actvsexp_TD,
-       filename = "output/graphs/te_actvsexp_TD.png",
-       width    = 12,
-       height   = 8,
-       dpi      = 300,
-       units    = "in")
-
-##################################################################################################################################################
 
 #############################################
 # RB Actual vs Expected Fantasy Points PPR
@@ -1005,7 +896,7 @@ fp_RB2026 <- avg_fpRB_df %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Running Backs**'),
-             subtitle = 'Through Week 1') %>%
+             subtitle = 'Through Week 2') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -1034,12 +925,12 @@ fp_RB2026 <- avg_fpRB_df %>%
   tab_spanner(label = md('**Expected**'), columns = vars(targets, rec_exp, yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
     columns = vars(PPR_pts, total_expected_points),
-    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 36)),
+    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(0, 63)),
     autocolor_text = FALSE
   ) %>%
   data_color(
     columns = vars(forp),
-    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-7, 0, 16)),
+    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-12, 0, 16)),
     autocolor_text = FALSE
   ) %>%
   tab_options(
@@ -1280,7 +1171,7 @@ fp_QB2026 <- avg_fpQB_df %>%
   mutate(Rank = row_number()) %>%
   gt() %>%
   tab_header(title = md('**2026 Actual vs. Expected PPR Fantasy Points Quarterbacks**'),
-             subtitle = 'Through Week 1') %>%
+             subtitle = 'Through Week 2') %>%
   cols_move_to_start(columns = vars(Rank)) %>%
   cols_label(
     games = 'GP',
@@ -1307,12 +1198,12 @@ fp_QB2026 <- avg_fpQB_df %>%
   tab_spanner(label = md('**Expected**'), columns = vars(pass_yds_exp, rush_yds_exp, tds_exp, total_expected_points)) %>%
   data_color(
     columns = vars(PPR_pts, total_expected_points),
-    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(-1, 40)),
+    colors = scales::col_numeric(palette = c('grey97', '#E03FD8'), domain = c(-1, 77)),
     autocolor_text = FALSE
   ) %>%
   data_color(
     columns = vars(forp),
-    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-10, 0, 13)),
+    colors = scales::col_numeric(palette = c('#FF4040', '#FFFFFF', '#40C040'), domain = c(-15, 0, 24)),
     autocolor_text = FALSE
   ) %>%
   tab_options(
@@ -1357,109 +1248,3 @@ gtsave(fp_QB2026,
        filename = "output/tables/exp_fp_QB2026.png")
 
 #######################################################################################################################
-library(nflfastR)
-library(ggimage)
-library(ggrepel)
-
-# Load play-by-play data
-pbp <- load_pbp(2025) |>
-  filter(week >= 1 & week <= 18)
-
-avg_exp_fpRB_df <- avg_fpRB_df %>%
-  mutate(
-    fp_game = PPR_pts / games,
-    # Extract clean abbreviation whether team is plain text or HTML
-    team_clean = if_else(
-      str_detect(team, "<span"),
-      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
-      team
-    )
-  ) %>%
-  filter(games >= 8 & fp_game >= 8) %>%
-  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
-
-rb_actvsexp_TD <- ggplot(avg_exp_fpRB_df, aes(x = td, y = tds_exp)) +
-  geom_point(aes(color = team_color), size = 3.5) +
-  scale_color_identity() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
-  geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
-  labs(
-    title = "2025 NFL Running Backs: Actual vs. Expected Touchdowns",
-    x = "Actual Touchdowns",
-    y = "Expected Touchdowns",
-    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 8 games & 8 Fpts per game",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
-  ) +
-  geom_label(x = 5, y = 15, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  geom_label(x = 15, y = 5, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  theme_minimal() +
-  theme(
-    plot.title = ggplot2::element_text(face = "bold"),
-    plot.title.position = "plot",
-    plot.subtitle = ggtext::element_markdown(),
-    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-    plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
-  )
-
-rb_actvsexp_TD
-
-ggsave(rb_actvsexp_TD,
-       filename = "output/graphs/rb_actvsexp_TD.png",
-       width    = 12,
-       height   = 8,
-       dpi      = 300,
-       units    = "in")
-
-
-library(nflfastR)
-library(ggimage)
-library(ggrepel)
-
-# Load play-by-play data
-pbp <- load_pbp(2025) |>
-  filter(week >= 1 & week <= 18)
-
-avg_exp_fpQB_df <- avg_fpQB_df %>%
-  mutate(
-    fp_game = PPR_pts / games,
-    # Extract clean abbreviation whether team is plain text or HTML
-    team_clean = if_else(
-      str_detect(team, "<span"),
-      str_extract(team, "(?<=\\>)[A-Z]{2,3}"),
-      team
-    )
-  ) %>%
-  filter(games >= 10 & fp_game >= 10) %>%
-  left_join(teams_colors_logos, by = c("team_clean" = "team_abbr"))
-
-qb_actvsexp_TD <- ggplot(avg_exp_fpQB_df, aes(x = td, y = tds_exp)) +
-  geom_point(aes(color = team_color), size = 3.5) +
-  scale_color_identity() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "purple") +
-  geom_text_repel(aes(label = player_name), box.padding = 0.5, max.overlaps = 22) +
-  labs(
-    title = "2025 NFL Quarterbacks: Actual vs. Expected Touchdowns",
-    x = "Actual Touchdowns",
-    y = "Expected Touchdowns",
-    subtitle = "**Data:** nflfastr and nflreadr | **By:** Jake Mammen | @FantasySPack | Min. 10 games & 10 Fpts per game",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png"
-  ) +
-  geom_label(x = 20, y = 40, label = "Postive TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  geom_label(x = 40, y = 12, label = "Negative TD Regression Candidates", fill = "purple", color = "white", label.size = 0.5) +
-  theme_minimal() +
-  theme(
-    plot.title = ggplot2::element_text(face = "bold"),
-    plot.title.position = "plot",
-    plot.subtitle = ggtext::element_markdown(),
-    plot.background = ggplot2::element_rect(fill = "#F0F0F0"),
-    plot.caption = ggpath::element_path(hjust = 1, size = 1.0)
-  )
-
-qb_actvsexp_TD
-
-ggsave(qb_actvsexp_TD,
-       filename = "output/graphs/qb_actvsexp_TD.png",
-       width    = 12,
-       height   = 8,
-       dpi      = 300,
-       units    = "in")

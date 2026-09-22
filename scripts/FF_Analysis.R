@@ -173,7 +173,7 @@ library(gt)
 library(dplyr)
 library(ggrepel)
 
-data <- load_player_stats(seasons = 2025)
+data <- load_player_stats(seasons = 2026)
 
 qb_stats <- data |>
   filter(position == "QB")
@@ -202,7 +202,7 @@ wr_fdprr <- wr_stats |>
     sum_rec_fd = sum(receiving_first_downs, na.rm = TRUE),
     .groups = "drop"
   ) |> 
-  filter(sum_rec_fd >= 30)
+  filter(sum_rec_fd >= 5)
 
 # 4. Exploratory calculations
 cor(wr_fdprr$sum_rec_fd, wr_fdprr$sum_fpts_ppr)
@@ -231,6 +231,8 @@ wr_fdandppr <- ggplot(wr_fdprr, aes(x = sum_rec_fd, y = sum_fpts_ppr)) +
     legend.position = "none" # Hides the messy color legend since colors match teams directly
   )
 
+wr_fdandppr
+
 ggsave(filename = "output/graphs/2025_WR_fd_and_ppr.png",
        plot     = wr_fdandppr,
        width    = 10,
@@ -246,7 +248,7 @@ wr_tar_share <- wr_stats |>
     team = dplyr::last(team),
     target_share = mean(target_share, na.rm = TRUE)
   ) |> 
-  dplyr::slice_max(target_share, n = 10)
+  dplyr::slice_max(target_share, n = 20)
 
 # 2. Plotting with names on the x-axis
 wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_share), y = target_share)) + 
@@ -272,6 +274,8 @@ wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_s
     # Rotates text slightly if names overlap, or keep standard text by leaving this blank
     axis.text.x = ggplot2::element_text(angle = 45, hjust = 1) 
   )
+
+wr_target_share
 
 ggsave(filename = "output/graphs/2025_wr_target_share.png",
        plot     = wr_target_share,

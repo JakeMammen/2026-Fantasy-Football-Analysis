@@ -14,7 +14,7 @@ library(ggrepel)
 
 # ---- settings ----------------------------------------------------------------
 season_year         <- 2026L
-min_touches         <- 8L
+min_touches         <- 16L
 backfield_positions <- c("RB", "HB", "FB")
 excluded_players    <- c("Al-Jay Henderson")
 logo_path <- "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
@@ -250,7 +250,7 @@ option_a <- ggplot(
     ),
     subtitle = paste(
       "HVT = carries inside the 10 + receptions",
-      "| Through Week 1 (min. ", min_touches, " touches)",
+      "| Through Week 2 (min. ", min_touches, " touches)",
       "| Regular season", season_year
     ),
     caption  = logo_path
@@ -306,9 +306,9 @@ option_d <- ggplot(
     ),
     subtitle = paste(
       "High-value = carries inside the 10 + receptions",
-      "| Min. ",
+      "| Min.",
       min_touches, " touches",
-      "| Through Week 1 - Regular season", season_year
+      "| Through Week 2 - Regular season", season_year
     ),
     caption  = logo_path
   ) +
