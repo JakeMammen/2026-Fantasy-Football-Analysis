@@ -14,7 +14,7 @@ library(ggrepel)
 
 # ---- settings ----------------------------------------------------------------
 season_year         <- 2026L
-min_touches         <- 16L
+min_touches         <- 22L
 backfield_positions <- c("RB", "HB", "FB")
 excluded_players    <- c("Al-Jay Henderson")
 logo_path <- "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
