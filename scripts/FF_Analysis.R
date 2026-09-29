@@ -28,7 +28,7 @@ qbs <- pbp |>
     plays = dplyr::n(),
     qb_epa = mean(qb_epa, na.ram = TRUE)
   ) |>
-  dplyr::filter(plays > 25) |>
+  dplyr::filter(plays > 50) |>
   dplyr::slice_max(qb_epa, n = 10)
 
 epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
@@ -40,7 +40,7 @@ epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
     y = "Defense EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
     title = "2026 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Week 1 | Data: @nflfastR"
+    subtitle = "Through Week 3 | Data: @nflfastR"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -60,7 +60,7 @@ ggsave(filename = "output/graphs/2026_OffandDef_EPA.png",
        dpi      = 300,
        units    = "in")
 
-best_off <- c("LA", "GB", "NE", "BUF")
+best_off <- c("SF", "DAL", "BAL", "BUF")
 
 epa_best_off <- combined |>
   dplyr::mutate(
@@ -68,15 +68,15 @@ epa_best_off <- combined |>
     alpha = ifelse(team %in% best_off, 0.9, 0.2)
   ) |>
   ggplot2::ggplot(aes(x = off_epa, y = def_epa)) +
-  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.4, -0.3, -0.1), alpha = .2) +
+  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.8, -0.8, by = -0.1), alpha = .2) +
   nflplotR::geom_mean_lines(aes(x0 = off_epa , y0 = def_epa)) +
   nflplotR::geom_nfl_logos(aes(team_abbr = team, alpha = alpha, colour = colour), width = 0.065) +
   ggplot2::labs(
     x = "Offense EPA/play",
     y = "Defense EPA/play",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-    title = "2025 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Data: @nflfastR"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
+    title = "2026 NFL Offensive and Defensive EPA per Play",
+    subtitle = "Through Week 3 | Data: @nflfastR"
   ) +
   ggplot2::scale_alpha_identity() +
   ggplot2::scale_color_identity() +
@@ -91,14 +91,14 @@ epa_best_off <- combined |>
 
 epa_best_off
 
-ggsave(filename = "output/graphs/2025_EPA_best_off.png",
+ggsave(filename = "output/graphs/2026_EPA_best_off.png",
        plot     = epa_best_off,
        width    = 10,
        height   = 6,
        dpi      = 300,
        units    = "in")
 
-best_def <- c("SEA", "HOU", "MIN", "CLE")
+best_def <- c("SEA", "LV", "MIN", "JAX")
 
 epa_best_def <- combined |>
   dplyr::mutate(
@@ -106,15 +106,15 @@ epa_best_def <- combined |>
     alpha = ifelse(team %in% best_def, 0.9, 0.2)
   ) |>
   ggplot2::ggplot(aes(x = off_epa, y = def_epa)) +
-  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.4, -0.3, -0.1), alpha = .2) +
+  ggplot2::geom_abline(slope = -1.5, intercept = seq(0.8, -0.8, by = -0.1), alpha = .2) +
   nflplotR::geom_mean_lines(aes(x0 = off_epa , y0 = def_epa)) +
   nflplotR::geom_nfl_logos(aes(team_abbr = team, alpha = alpha, colour = colour), width = 0.065) +
   ggplot2::labs(
     x = "Offense EPA/play",
     y = "Defense EPA/play",
-    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/Graph_logo2.png",
-    title = "2025 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Data: @nflfastR"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
+    title = "2026 NFL Offensive and Defensive EPA per Play",
+    subtitle = "Through Week 3 | Data: @nflfastR"
   ) +
   ggplot2::scale_alpha_identity() +
   ggplot2::scale_color_identity() +
@@ -129,7 +129,7 @@ epa_best_def <- combined |>
 
 epa_best_def
 
-ggsave(filename = "output/graphs/2025_EPA_best_def.png",
+ggsave(filename = "output/graphs/2026_EPA_best_def.png",
        plot     = epa_best_def,
        width    = 10,
        height   = 6,
@@ -142,7 +142,7 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
   nflplotR::scale_fill_nfl(alpha = 0.4) +
   ggplot2::labs(
     title = "2026 NFL Quarterback EPA per Play Leaders",
-    subtitle = "Week 1 | Data: @nflfastR",
+    subtitle = "Through Week 3 | Min. 50 plays | Data: @nflfastR",
     y = "EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) +
@@ -202,7 +202,7 @@ wr_fdprr <- wr_stats |>
     sum_rec_fd = sum(receiving_first_downs, na.rm = TRUE),
     .groups = "drop"
   ) |> 
-  filter(sum_rec_fd >= 5)
+  filter(sum_rec_fd >= 8)
 
 # 4. Exploratory calculations
 cor(wr_fdprr$sum_rec_fd, wr_fdprr$sum_fpts_ppr)
@@ -217,10 +217,10 @@ wr_fdandppr <- ggplot(wr_fdprr, aes(x = sum_rec_fd, y = sum_fpts_ppr)) +
   geom_text_repel(aes(label = player_name), segment.colour = "gray50", box.padding = 0.5) +
   labs(
     title = tools::toTitleCase("First Down Receptions vs. PPR Fantasy Points"),
-    subtitle = "2025 Season | Min. 30 FD Recs | Total | @FantasySPack | Data: nflreadr",
+    subtitle = "2026 Season | Min. 8 FD Recs | Total PPR Fpts | Data: nflreadr",
     x = "Total First Down Receptions",
     y = "Total Fantasy Points (PPR)",
-    caption = "/Users/jakemammen/Library/CloudStorage/OneDrive-Personal/Desktop/Masters Program/Fantasy_Football/Graph_logo2.png"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) +
   theme_minimal() +
   theme(
@@ -233,7 +233,7 @@ wr_fdandppr <- ggplot(wr_fdprr, aes(x = sum_rec_fd, y = sum_fpts_ppr)) +
 
 wr_fdandppr
 
-ggsave(filename = "output/graphs/2025_WR_fd_and_ppr.png",
+ggsave(filename = "output/graphs/2026_WR_fd_and_ppr.png",
        plot     = wr_fdandppr,
        width    = 10,
        height   = 6,
@@ -246,9 +246,11 @@ wr_tar_share <- wr_stats |>
   dplyr::summarise(
     name = dplyr::first(player_name),
     team = dplyr::last(team),
-    target_share = mean(target_share, na.rm = TRUE)
+    target_share = mean(target_share, na.rm = TRUE),
+    games_played = dplyr::n_distinct(week, na.rm = TRUE)
   ) |> 
-  dplyr::slice_max(target_share, n = 20)
+  dplyr::slice_max(target_share, n = 20) |>
+  filter(games_played >= 3)
 
 # 2. Plotting with names on the x-axis
 wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_share), y = target_share)) + 
@@ -258,10 +260,10 @@ wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_s
   nflplotR::scale_color_nfl(type = "secondary") + 
   nflplotR::scale_fill_nfl(alpha = 0.4) + 
   ggplot2::labs(
-    title = "2025 NFL WR Avg Target Share Leaders",
-    subtitle = "Data: @nflfastR",
+    title = "2026 NFL WR Avg Target Share Leaders",
+    subtitle = "Through Week 3 | Min. 3 Games Played | Data: @nflfastR",
     y = "Target Share",
-    caption = "/Users/jakemammen/Library/CloudStorage/OneDrive-Personal/Desktop/Masters Program/Fantasy_Football/Graph_logo2.png"
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) + 
   ggplot2::theme_minimal() + 
   ggplot2::theme(
@@ -277,7 +279,7 @@ wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_s
 
 wr_target_share
 
-ggsave(filename = "output/graphs/2025_wr_target_share.png",
+ggsave(filename = "output/graphs/2026_wr_target_share.png",
        plot     = wr_target_share,
        width    = 10,
        height   = 6,
@@ -292,9 +294,11 @@ wr_tar_share_ppr <- wr_stats |>
   dplyr::summarise(
     avg_target_share   = mean(target_share, na.rm = TRUE),
     total_fpts_ppr     = sum(fantasy_points_ppr, na.rm = TRUE),
+    games_played = dplyr::n_distinct(week, na.rm = TRUE),
     .groups            = "drop"
   ) |>
-  filter(avg_target_share >= .15)
+  filter(avg_target_share >= .15) |>
+  filter(games_played >= 3)
 
 cor(wr_tar_share_ppr$avg_target_share, wr_tar_share_ppr$total_fpts_ppr)
 plot(wr_tar_share_ppr$avg_target_share, wr_tar_share_ppr$total_fpts_ppr)
@@ -305,6 +309,8 @@ library(ggrepel) # Required for geom_text_repel
 wr_tar_share_and_ppr <- ggplot(wr_tar_share_ppr, aes(x = avg_target_share, y = total_fpts_ppr)) + 
   # Replaced geom_point with nflplotR points scaled automatically to team colors 
   geom_point(aes(color = team, fill = team), size = 3, shape = 21, stroke = 1) + 
+  geom_smooth(method = "lm", se = TRUE, color = "gray30", fill = "gray70",
+              linewidth = 0.8, alpha = 0.25) +
   scale_color_nfl(type = "secondary") + 
   scale_fill_nfl(type = "primary") + 
   
@@ -316,10 +322,10 @@ wr_tar_share_and_ppr <- ggplot(wr_tar_share_ppr, aes(x = avg_target_share, y = t
   
   labs( 
     title = tools::toTitleCase("Avg. Target Share vs. PPR Fantasy Points"), 
-    subtitle = "2025 Season | @FantasySPack | Data: nflreadr", 
+    subtitle = "2026 Season | Through Week 3 | Data: nflreadr", 
     x = "Average Target Share", 
     y = "Total Fantasy Points (PPR)", 
-    caption = "/Users/jakemammen/Library/CloudStorage/OneDrive-Personal/Desktop/Masters Program/Fantasy_Football/Graph_logo2.png" 
+    caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) + 
   theme_minimal() + 
   theme( 
@@ -333,7 +339,7 @@ wr_tar_share_and_ppr <- ggplot(wr_tar_share_ppr, aes(x = avg_target_share, y = t
 
 wr_tar_share_and_ppr
 
-ggsave(filename = "output/graphs/2025_wr_tar_share_and_ppr.png",
+ggsave(filename = "output/graphs/2026_wr_tar_share_and_ppr.png",
        plot     = wr_tar_share_and_ppr,
        width    = 10,
        height   = 6,

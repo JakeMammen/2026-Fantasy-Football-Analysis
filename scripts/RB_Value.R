@@ -189,28 +189,28 @@ option_a <- ggplot(
     x = -Inf, y = Inf,
     label = "Low volume, high HVT",
     hjust = -0.08, vjust = 1.15,
-    size = 3.3, fontface = "bold", color = "grey30", lineheight = 0.95
+    size = 3.3, fontface = "bold", color = "orange", lineheight = 0.95
   ) +
   annotate(
     "text",
     x = Inf, y = Inf,
     label = "High volume, high HVT",
     hjust = 1.08, vjust = 1.15,
-    size = 3.3, fontface = "bold", color = "grey30", lineheight = 0.95
+    size = 3.3, fontface = "bold", color = "darkgreen", lineheight = 0.95
   ) +
   annotate(
     "text",
     x = -Inf, y = -Inf,
     label = "Low volume, low HVT",
     hjust = -0.08, vjust = -0.25,
-    size = 3.3, fontface = "bold", color = "grey30", lineheight = 0.95
+    size = 3.3, fontface = "bold", color = "red", lineheight = 0.95
   ) +
   annotate(
     "text",
     x = Inf, y = -Inf,
     label = "High volume, low HVT",
     hjust = 1.08, vjust = -0.25,
-    size = 3.3, fontface = "bold", color = "grey30", lineheight = 0.95
+    size = 3.3, fontface = "bold", color = "blue", lineheight = 0.95
   ) +
   geom_point(
     aes(fill = team_color),
@@ -250,7 +250,7 @@ option_a <- ggplot(
     ),
     subtitle = paste(
       "HVT = carries inside the 10 + receptions",
-      "| Through Week 2 (min. ", min_touches, " touches)",
+      "| Through Week 3 (min. ", min_touches, " touches)",
       "| Regular season", season_year
     ),
     caption  = logo_path
@@ -308,7 +308,7 @@ option_d <- ggplot(
       "High-value = carries inside the 10 + receptions",
       "| Min.",
       min_touches, " touches",
-      "| Through Week 2 - Regular season", season_year
+      "| Through Week 3 - Regular season", season_year
     ),
     caption  = logo_path
   ) +

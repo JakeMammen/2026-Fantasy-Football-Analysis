@@ -72,7 +72,7 @@ adot_tbl <- adot_tbl |>
   gt() |>
   tab_header(
     title = md("**2026 Average Depth of Target (ADOT)**"),
-    subtitle = md("Week 1 | Minimum 15 pass attempts")
+    subtitle = md("Through Week 3 | Minimum 15 pass attempts")
   ) |>
   cols_move_to_start(columns = rank) |>
   cols_label(
