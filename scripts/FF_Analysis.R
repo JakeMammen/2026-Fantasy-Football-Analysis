@@ -40,7 +40,7 @@ epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
     y = "Defense EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
     title = "2026 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Through Week 3 | Data: @nflfastR"
+    subtitle = "Through Week 5 | Data: @nflfastR"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
