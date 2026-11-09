@@ -28,7 +28,7 @@ qbs <- pbp |>
     plays = dplyr::n(),
     qb_epa = mean(qb_epa, na.ram = TRUE)
   ) |>
-  dplyr::filter(plays > 50) |>
+  dplyr::filter(plays > 200) |>
   dplyr::slice_max(qb_epa, n = 10)
 
 epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
@@ -40,7 +40,7 @@ epa <- ggplot2::ggplot(combined, aes(x = off_epa, y = def_epa)) +
     y = "Defense EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png",
     title = "2026 NFL Offensive and Defensive EPA per Play",
-    subtitle = "Through Week 8 | Data: @nflfastR"
+    subtitle = "Through Week 9 Pre MNF | Data: @nflfastR"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -142,7 +142,7 @@ qb_epa <- ggplot2::ggplot(qbs, aes(x = reorder(name, -qb_epa), y = qb_epa)) +
   nflplotR::scale_fill_nfl(alpha = 0.4) +
   ggplot2::labs(
     title = "2026 NFL Quarterback EPA per Play Leaders",
-    subtitle = "Through Week 3 | Min. 50 plays | Data: @nflfastR",
+    subtitle = "Through Week 9 Pre MNF | Min. 200 plays | Data: @nflfastR",
     y = "EPA/play",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) +
@@ -249,8 +249,8 @@ wr_tar_share <- wr_stats |>
     target_share = mean(target_share, na.rm = TRUE),
     games_played = dplyr::n_distinct(week, na.rm = TRUE)
   ) |> 
-  dplyr::slice_max(target_share, n = 20) |>
-  filter(games_played >= 3)
+  dplyr::slice_max(target_share, n = 35) |>
+  filter(games_played >= 7)
 
 # 2. Plotting with names on the x-axis
 wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_share), y = target_share)) + 
@@ -261,7 +261,7 @@ wr_target_share <- ggplot2::ggplot(wr_tar_share, aes(x = reorder(name, -target_s
   nflplotR::scale_fill_nfl(alpha = 0.4) + 
   ggplot2::labs(
     title = "2026 NFL WR Avg Target Share Leaders",
-    subtitle = "Through Week 3 | Min. 3 Games Played | Data: @nflfastR",
+    subtitle = "Through Week 9 Pre MNF | Min. 7 Games Played | Data: @nflfastR",
     y = "Target Share",
     caption = "/Users/jakemammen/Developer/2026_Fantasy_Football_Analysis/logos/FSP_Logo_ggplot.png"
   ) + 
